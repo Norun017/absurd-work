@@ -1,0 +1,29 @@
+html {
+  font-size: 16px; 
+  font-family: 'Lucida Console', monospace;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 480px;
+  margin-top: 5;
+}
+
+h1 {
+  width: 480px; 
+  text-align: center;
+}
+
+p {
+  font-size: 1.25em;
+  margin: 0.3em;
+}
+
+button {
+  font-size: 0.9em;
+  margin-top: 0.3em;
+  font-family: 'Lucida Console', monospace;
+}
