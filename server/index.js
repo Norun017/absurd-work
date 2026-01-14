@@ -4,6 +4,7 @@ const path = require("path");
 const cors = require("cors");
 
 const app = express();
+const hostname = "localhost";
 const port = 3000;
 
 app.use(cors());
@@ -11,10 +12,10 @@ app.use(cors());
 const LOG_PATH = path.join(__dirname, "counters.log");
 
 // --- rebuild counter on startup ---
-let counter = 0;
+let counter = 0n;
 if (fs.existsSync(LOG_PATH)) {
   const data = fs.readFileSync(LOG_PATH, "utf8");
-  counter = data.split("\n").filter(Boolean).length;
+  counter = BigInt(data.split("\n").filter(Boolean).length);
 }
 
 // --- append-only click ---
@@ -25,14 +26,14 @@ app.post("/click", (req, res) => {
     if (err) {
       return res.status(500).json({ error: "log write failed" });
     }
-    counter++;
+    counter += 1n;
   });
-  res.json({ counter });
+  res.json({ counter: counter.toString() });
 });
 
 // --- read-only counter ---
 app.get("/", (req, res) => {
-  res.json({ counter });
+  res.json({ counter: counter.toString() });
 });
 
 // --- Update SSE ---
@@ -45,7 +46,7 @@ app.get("/events", (req, res) => {
 
   // Update every 2 seconds
   const intervalUpdate = setInterval(() => {
-    res.write(`data: ${counter}\n\n`);
+    res.write(`data: ${counter.toString()}\n\n`);
   }, 2000);
 
   // Close connection
@@ -55,6 +56,6 @@ app.get("/events", (req, res) => {
   });
 });
 
-app.listen(port, () => {
+app.listen(port, hostname, () => {
   console.log(`v0.2 running on port ${port}`);
 });

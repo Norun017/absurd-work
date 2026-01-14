@@ -11,7 +11,7 @@ const ctx = canvas.getContext("2d");
 const canvasSize = canvas.width;
 const cellSize = canvasSize / GRID_SIZE;
 
-let counter = 0;
+let counter = 0n;
 let order;
 let syncing = false;
 
@@ -20,7 +20,7 @@ async function init() {
   order = distanceOrder(GRID_SIZE);
   const res = await fetch("http://localhost:3000/", { method: "GET" });
   const data = await res.json();
-  counter = data.counter;
+  counter = BigInt(data.counter);
   render(counter);
 }
 
@@ -34,7 +34,7 @@ btn.addEventListener("click", () => {
 
 // Listen to SSE
 source.onmessage = (e) => {
-  const global = Number(e.data);
+  const global = BitInt(e.data);
   if (global > counter) {
     counter = global;
     render(counter);
@@ -49,7 +49,7 @@ async function click() {
 
   const prevCounter = counter; // For revert back if write failed
   // Optimistic update
-  counter++;
+  counter += 1n;
   render(counter);
 
   try {

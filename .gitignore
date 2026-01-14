@@ -1,3 +1,4 @@
 /client-offline/
 /backup/
 .DS_Store
+/server/counters.log
