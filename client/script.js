@@ -1,6 +1,7 @@
 const log = document.querySelector(".log");
 const btn = document.querySelector("button");
-const source = new EventSource("http://localhost:3000/events");
+const URL = "https://absurd-work.norunart.com";
+const source = new EventSource(`${URL}/events`);
 
 const GRID_SIZE = 16;
 const totalCells = GRID_SIZE * GRID_SIZE;
@@ -18,7 +19,7 @@ let syncing = false;
 // Init
 async function init() {
   order = distanceOrder(GRID_SIZE);
-  const res = await fetch("http://localhost:3000/", { method: "GET" });
+  const res = await fetch(`${URL}/`, { method: "GET" });
   const data = await res.json();
   counter = BigInt(data.counter);
   render(counter);
@@ -53,7 +54,7 @@ async function click() {
   render(counter);
 
   try {
-    const res = await fetch("http://localhost:3000/click", { method: "POST" });
+    const res = await fetch(`${URL}/click`, { method: "POST" });
     // Handle non-2xx HTTP status
     if (!res.ok) throw new Error(`Server error: ${res.status}`);
   } catch {
