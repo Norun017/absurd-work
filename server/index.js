@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
@@ -54,6 +55,11 @@ app.get("/events", (req, res) => {
     clearInterval(intervalUpdate);
     res.end();
   });
+});
+
+// Check Health
+app.get("/health", (req, res) => {
+  res.json({ ok: true, environment: process.env.NODE_ENV });
 });
 
 app.listen(port, hostname, () => {
