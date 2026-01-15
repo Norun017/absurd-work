@@ -43,11 +43,8 @@ source.onmessage = (e) => {
 };
 
 // -----------Click & Update ----------
-let pending = false;
-async function click() {
-  if (pending) return;
-  pending = true;
 
+async function click() {
   const prevCounter = counter; // For revert back if write failed
   // Optimistic update
   counter += 1n;
@@ -61,8 +58,6 @@ async function click() {
     // Rollback
     counter = prevCounter;
     render(counter);
-  } finally {
-    pending = false;
   }
 }
 
