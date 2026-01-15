@@ -35,7 +35,7 @@ btn.addEventListener("click", () => {
 
 // Listen to SSE
 source.onmessage = (e) => {
-  const global = BitInt(e.data);
+  const global = BigInt(e.data);
   if (global > counter) {
     counter = global;
     render(counter);
