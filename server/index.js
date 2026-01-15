@@ -33,7 +33,7 @@ app.post("/click", (req, res) => {
 });
 
 // --- read-only counter ---
-app.get("/", (req, res) => {
+app.get("/read", (req, res) => {
   res.json({ counter: counter.toString() });
 });
 

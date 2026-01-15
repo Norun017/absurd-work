@@ -1,6 +1,6 @@
 const log = document.querySelector(".log");
 const btn = document.querySelector("button");
-const URL = "https://absurd-work.norunart.com";
+const URL = "";
 const source = new EventSource(`${URL}/events`);
 
 const GRID_SIZE = 16;
@@ -19,7 +19,7 @@ let syncing = false;
 // Init
 async function init() {
   order = distanceOrder(GRID_SIZE);
-  const res = await fetch(`${URL}/`, { method: "GET" });
+  const res = await fetch(`${URL}/read`, { method: "GET" });
   const data = await res.json();
   counter = BigInt(data.counter);
   render(counter);
