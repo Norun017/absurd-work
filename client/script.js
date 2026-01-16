@@ -1,6 +1,6 @@
 const log = document.querySelector(".log");
 const btn = document.querySelector("button");
-const URL = "";
+const URL = "http://localhost:3001";
 const source = new EventSource(`${URL}/events`);
 
 const GRID_SIZE = 16;
@@ -145,3 +145,18 @@ function distanceOrder(N) {
   order.sort((a, b) => b.d - a.d || b.y - a.y || b.x - a.x);
   return order;
 }
+
+//* For Crpto Button *//
+document.addEventListener("click", (e) => {
+  if (!e.target.classList.contains("copy-btn")) return;
+
+  const wallet = e.target.dataset.wallet;
+  navigator.clipboard.writeText(wallet);
+
+  const original = e.target.textContent;
+  e.target.textContent = "Copied";
+
+  setTimeout(() => {
+    e.target.textContent = original;
+  }, 800);
+});
