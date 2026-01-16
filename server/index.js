@@ -9,7 +9,7 @@ const port = 3001;
 
 app.use(express.static(path.join(__dirname, "../client")));
 
-const LOG_PATH = path.join(__dirname, "counters.log");
+const LOG_PATH = path.join(__dirname, "absurd-work.log");
 
 // --- rebuild counter on startup ---
 let counter = 0n;
