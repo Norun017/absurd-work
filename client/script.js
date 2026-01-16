@@ -1,7 +1,6 @@
 const log = document.querySelector(".log");
 const btn = document.querySelector("button");
-const URL = "http://localhost:3001";
-const source = new EventSource(`${URL}/events`);
+const source = new EventSource(`/events`);
 
 const GRID_SIZE = 16;
 const totalCells = GRID_SIZE * GRID_SIZE;
@@ -19,7 +18,7 @@ let syncing = false;
 // Init
 async function init() {
   order = distanceOrder(GRID_SIZE);
-  const res = await fetch(`${URL}/read`, { method: "GET" });
+  const res = await fetch(`/read`, { method: "GET" });
   const data = await res.json();
   counter = BigInt(data.counter);
   render(counter);
@@ -51,7 +50,7 @@ async function click() {
   render(counter);
 
   try {
-    const res = await fetch(`${URL}/click`, { method: "POST" });
+    const res = await fetch(`/click`, { method: "POST" });
     // Handle non-2xx HTTP status
     if (!res.ok) throw new Error(`Server error: ${res.status}`);
   } catch {
