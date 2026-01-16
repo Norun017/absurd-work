@@ -148,7 +148,7 @@ function distanceOrder(N) {
 
 //* For Crpto Button *//
 document.addEventListener("click", (e) => {
-  if (!e.target.classList.contains("copy-btn")) return;
+  if (!e.target.classList.contains("wallet-copy")) return;
 
   const wallet = e.target.dataset.wallet;
   navigator.clipboard.writeText(wallet);
