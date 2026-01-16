@@ -2,13 +2,12 @@ require("dotenv").config();
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
-const cors = require("cors");
 
 const app = express();
 const hostname = "localhost";
 const port = 3001;
 
-app.use(cors());
+app.use(express.static(path.join(__dirname, "../client")));
 
 const LOG_PATH = path.join(__dirname, "counters.log");
 
