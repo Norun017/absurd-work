@@ -48,7 +48,7 @@ app.get("/events", (req, res) => {
   // Update every 2 seconds
   const intervalUpdate = setInterval(() => {
     res.write(`data: ${counter.toString()}\n\n`);
-  }, 2000);
+  }, 3000);
 
   // Close connection
   req.on("close", () => {
