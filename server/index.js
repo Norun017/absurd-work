@@ -27,8 +27,8 @@ app.post("/click", (req, res) => {
       return res.status(500).json({ error: "log write failed" });
     }
     counter += 1n;
+    res.json({ counter: counter.toString() });
   });
-  res.json({ counter: counter.toString() });
 });
 
 // --- read-only counter ---
