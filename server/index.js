@@ -1,7 +1,15 @@
-require("dotenv").config();
-const express = require("express");
-const fs = require("fs");
-const path = require("path");
+import dotenv from "dotenv";
+dotenv.config();
+
+import express from "express";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+//import getNextSegmentName from "./snapshot.js";
 
 const app = express();
 const hostname = "localhost";
@@ -64,3 +72,5 @@ app.get("/health", (req, res) => {
 app.listen(port, hostname, () => {
   console.log(`v0.2 running on port ${port}`);
 });
+
+//console.log(getNextSegmentName);
