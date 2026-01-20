@@ -1,7 +1,5 @@
 import fs from "fs";
 import path from "path";
-import { execSync } from "child_process";
-import { getISOWeek } from "./time.js";
 
 const ROOT = path.resolve(".");
 const LOGS_DIR = path.join(ROOT, "history_logs");
@@ -35,18 +33,8 @@ export function prepareWeeklyPublish({
   return targetDIR;
 }
 
-const { year, week } = getISOWeek();
-console.log(year, week);
-
-const result = prepareWeeklyPublish({
-  weekId: `${year}-W${week.toString().padStart(2, "0")}`,
-  snapshotFile: "snapshot.0017.json",
-  segmentFile: "absurd-work.log.0017",
-});
-console.log("Published:", result);
-
 /* 
-// Manual for v0.3.5
+// Manual for v0.3.5. Implement auto in later version
 export function publishToIPFS(folderPath) {
   const output = execSync(`ipfs add -r ${folderPath}`, {
     encoding: "utf8",

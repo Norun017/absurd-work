@@ -154,13 +154,5 @@ app.get("/health", (req, res) => {
 });
 
 app.listen(port, hostname, () => {
-  console.log(`v0.2 running on port ${port}`);
+  console.log(`v0.3.5 running on port ${port}`);
 });
-
-// Write snapshot and segment log files for weekly publish
-if (process.argv.includes("--prepare-publish")) {
-  console.log("Preparing weekly publish…");
-  rotateLog();
-  writeSnapshot(counter);
-  process.exit(0);
-}

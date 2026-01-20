@@ -41,6 +41,8 @@ function rotateLog() {
 
   fs.renameSync(ACTIVE_LOG, targetPath);
   fs.writeFileSync(ACTIVE_LOG, "");
+
+  return nextSegmentName;
 }
 
 function hashFile(filePath) {
@@ -102,6 +104,8 @@ function writeSnapshot(counter) {
 
   // Sign after write
   signSnapShot(filePath);
+
+  return fileName;
 }
 
 function signSnapShot(snapshotPath) {
