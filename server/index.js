@@ -50,17 +50,19 @@ async function flushQueue() {
 // Flush periodically
 setInterval(flushQueue, FLUSH_INTERVAL);
 
-// --- rebuild counter on startup ---
+// --- Rebuild counter on startup ---
 let counter = 0n;
 const snapshotPath = getPrevSnapshotPath();
 if (snapshotPath) {
   const file = JSON.parse(fs.readFileSync(snapshotPath, "utf8"));
   counter = BigInt(file.counter);
-  if (fs.existsSync(LOG_PATH)) {
-    const data = fs.readFileSync(LOG_PATH, "utf8");
-    const newCount = BigInt(data.split("\n").filter(Boolean).length);
-    counter += newCount;
-  }
+}
+
+// Always check active log (even if no snapshot)
+if (fs.existsSync(LOG_PATH)) {
+  const data = fs.readFileSync(LOG_PATH, "utf8");
+  const newCount = BigInt(data.split("\n").filter(Boolean).length);
+  counter += newCount;
 }
 
 // --- append-only click ---
