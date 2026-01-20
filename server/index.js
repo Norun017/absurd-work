@@ -3,6 +3,7 @@ dotenv.config();
 
 import express from "express";
 import fs from "fs";
+import { promises as fsPromises } from "fs";
 import path from "path";
 import { rotateLog, writeSnapshot, getPrevSnapshotPath } from "./snapshot.js";
 
@@ -15,6 +16,39 @@ const port = 3001;
 app.use(express.static(path.join(__dirname, "../client")));
 
 const LOG_PATH = path.join(__dirname, "absurd-work.log");
+
+// --- Batched write queue system ---
+let writeQueue = [];
+let isWriting = false;
+const MAX_QUEUE_SIZE = 10000; // Protect against memory overflow
+const BATCH_SIZE = 100; // Write 100 clicks at a time
+const FLUSH_INTERVAL = 100; // Flush every 100ms
+
+async function flushQueue() {
+  if (isWriting || writeQueue.length === 0) return;
+
+  isWriting = true;
+  const batch = writeQueue.splice(0, BATCH_SIZE);
+  const lines = batch.map((ts) => `${ts} \n`).join("");
+
+  try {
+    await fsPromises.appendFile(LOG_PATH, lines);
+  } catch (err) {
+    console.error("Batch write failed:", err);
+    // Put failed batch back at front of queue for retry
+    writeQueue.unshift(...batch);
+  }
+
+  isWriting = false;
+
+  // Continue flushing if queue still has items
+  if (writeQueue.length > 0) {
+    setImmediate(flushQueue);
+  }
+}
+
+// Flush periodically
+setInterval(flushQueue, FLUSH_INTERVAL);
 
 // --- rebuild counter on startup ---
 let counter = 0n;
@@ -31,18 +65,27 @@ if (snapshotPath) {
 
 // --- append-only click ---
 app.post("/click", (req, res) => {
-  const line = `${Date.now()} \n`;
+  // Check if system is overloaded
+  if (writeQueue.length > MAX_QUEUE_SIZE) {
+    return res.status(503).json({
+      error: "Overloaded, please work again",
+      counter: counter.toString(),
+    });
+  }
 
   counter += 1n;
   const currentCount = counter;
 
-  fs.appendFile(LOG_PATH, line, (err) => {
-    if (err) {
-      counter -= 1n; // Rollback on error
-      return res.status(500).json({ error: "log write failed" });
-    }
-    res.json({ counter: currentCount.toString() });
-  });
+  // Add to write queue
+  writeQueue.push(Date.now());
+
+  // Trigger immediate flush if queue is getting large
+  if (writeQueue.length >= BATCH_SIZE) {
+    setImmediate(flushQueue);
+  }
+
+  // Respond immediately (write happens asynchronously)
+  res.json({ counter: currentCount.toString() });
 });
 
 // --- read-only counter ---
