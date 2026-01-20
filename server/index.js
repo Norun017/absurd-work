@@ -83,10 +83,25 @@ app.get("/events", (req, res) => {
   // Add client to set
   sseClients.add(res);
 
+  // Ping to remove zombie connection
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(": ping\n\n");
+    } catch (err) {
+      clearInterval(heartbeat);
+      sseClients.delete(res);
+    }
+  }, 45000);
+
   // Close connection
   req.on("close", () => {
+    clearInterval(heartbeat);
     sseClients.delete(res);
-    res.end();
+  });
+
+  res.on("error", () => {
+    clearInterval(heartbeat);
+    sseClients.delete(res);
   });
 });
 
@@ -99,6 +114,7 @@ app.listen(port, hostname, () => {
   console.log(`v0.2 running on port ${port}`);
 });
 
+// Write snapshot and segment log files for weekly publish
 if (process.argv.includes("--prepare-publish")) {
   console.log("Preparing weekly publish…");
   rotateLog();
