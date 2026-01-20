@@ -4,12 +4,9 @@ dotenv.config();
 import express from "express";
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
+import { rotateLog, writeSnapshot } from "./snapshot.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-//import getNextSegmentName from "./snapshot.js";
+const __dirname = import.meta.dirname;
 
 const app = express();
 const hostname = "localhost";
@@ -21,9 +18,15 @@ const LOG_PATH = path.join(__dirname, "absurd-work.log");
 
 // --- rebuild counter on startup ---
 let counter = 0n;
-if (fs.existsSync(LOG_PATH)) {
-  const data = fs.readFileSync(LOG_PATH, "utf8");
-  counter = BigInt(data.split("\n").filter(Boolean).length);
+if (getPrevSnapshotPath()) {
+  const path = getPrevSnapshotPath();
+  const file = JSON.parse(fs.readFileSync(path, "utf8"));
+  counter = BigInt(file.counter);
+  if (fs.existsSync(LOG_PATH)) {
+    const data = fs.readFileSync(LOG_PATH, "utf8");
+    const newCount = BigInt(data.split("\n").filter(Boolean).length);
+    counter += newCount;
+  }
 }
 
 // --- append-only click ---
@@ -73,4 +76,9 @@ app.listen(port, hostname, () => {
   console.log(`v0.2 running on port ${port}`);
 });
 
-//console.log(getNextSegmentName);
+if (process.argv.includes("--prepare-publish")) {
+  console.log("Preparing weekly publish…");
+  rotateLog;
+  writeSnapshot(counter);
+  process.exit(0);
+}
