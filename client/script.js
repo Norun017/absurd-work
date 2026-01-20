@@ -13,7 +13,6 @@ const cellSize = canvasSize / GRID_SIZE;
 
 let counter = 0n;
 let order;
-let syncing = false;
 
 // Init
 async function init() {

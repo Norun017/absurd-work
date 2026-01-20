@@ -4,7 +4,7 @@ dotenv.config();
 import express from "express";
 import fs from "fs";
 import path from "path";
-import { rotateLog, writeSnapshot } from "./snapshot.js";
+import { rotateLog, writeSnapshot, getPrevSnapshotPath } from "./snapshot.js";
 
 const __dirname = import.meta.dirname;
 
@@ -18,9 +18,9 @@ const LOG_PATH = path.join(__dirname, "absurd-work.log");
 
 // --- rebuild counter on startup ---
 let counter = 0n;
-if (getPrevSnapshotPath()) {
-  const path = getPrevSnapshotPath();
-  const file = JSON.parse(fs.readFileSync(path, "utf8"));
+const snapshotPath = getPrevSnapshotPath();
+if (snapshotPath) {
+  const file = JSON.parse(fs.readFileSync(snapshotPath, "utf8"));
   counter = BigInt(file.counter);
   if (fs.existsSync(LOG_PATH)) {
     const data = fs.readFileSync(LOG_PATH, "utf8");
@@ -33,12 +33,16 @@ if (getPrevSnapshotPath()) {
 app.post("/click", (req, res) => {
   const line = `${Date.now()} \n`;
 
+  counter += 1n;
+  const currentCount = counter;
+
   fs.appendFile(LOG_PATH, line, (err) => {
     if (err) {
+      counter -= 1n; // Rollback on error
       return res.status(500).json({ error: "log write failed" });
     }
-    counter += 1n;
-    res.json({ counter: counter.toString() });
+    res.json({ counter: currentCount.toString() });
+    broadcastUpdate(currentCount);
   });
 });
 
@@ -55,7 +59,7 @@ app.get("/events", (req, res) => {
     Connection: "keep-alive",
   });
 
-  // Update every 2 seconds
+  // Update every 3 seconds
   const intervalUpdate = setInterval(() => {
     res.write(`data: ${counter.toString()}\n\n`);
   }, 3000);
@@ -78,7 +82,7 @@ app.listen(port, hostname, () => {
 
 if (process.argv.includes("--prepare-publish")) {
   console.log("Preparing weekly publish…");
-  rotateLog;
+  rotateLog();
   writeSnapshot(counter);
   process.exit(0);
 }
