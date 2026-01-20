@@ -199,6 +199,34 @@ Each snapshot includes:
 - Reference to previous snapshot (chain of custody)
 - Minisign signature for authenticity
 
+### Signature Verification
+
+All snapshots are cryptographically signed with Minisign for verifiable authenticity.
+
+**Public Key (Norun):**
+```
+untrusted comment: minisign public key 169CC68FE53E7344
+RWREcz7lj8acFsROk7DPsNdIAL3pgHS9pdNtYbZQyCiTVxr1vgVHk2Kq
+```
+
+**To verify a snapshot:**
+
+```bash
+# Install minisign
+apt-get install minisign  # Ubuntu/Debian
+brew install minisign      # macOS
+
+# Download the public key
+curl -o absurd-work.pub https://raw.githubusercontent.com/yourusername/every-icon-collective/main/server/absurd-work.pub
+
+# Verify a snapshot
+minisign -Vm snapshot.0001.json -p absurd-work.pub
+
+# Should output: Signature and comment signature verified
+```
+
+If stewardship changes in the future, the new maintainer's public key will be documented here with the transition date.
+
 ---
 
 ## Development
