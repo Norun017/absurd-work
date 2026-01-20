@@ -42,7 +42,6 @@ app.post("/click", (req, res) => {
       return res.status(500).json({ error: "log write failed" });
     }
     res.json({ counter: currentCount.toString() });
-    broadcastUpdate(currentCount);
   });
 });
 
@@ -50,6 +49,25 @@ app.post("/click", (req, res) => {
 app.get("/read", (req, res) => {
   res.json({ counter: counter.toString() });
 });
+
+// --- SSE client management
+const sseClients = new Set();
+let lastBroadcastCounter = counter;
+
+function broadcastUpdate(newCounter) {
+  const data = `data: ${newCounter.toString()}\n\n`;
+  sseClients.forEach((client) => {
+    client.write(data);
+  });
+  lastBroadcastCounter = newCounter;
+}
+
+// Broadcast every 3 seconds only if counter changed
+setInterval(() => {
+  if (counter !== lastBroadcastCounter) {
+    broadcastUpdate(counter);
+  }
+}, 3000);
 
 // --- Update SSE ---
 app.get("/events", (req, res) => {
@@ -59,14 +77,15 @@ app.get("/events", (req, res) => {
     Connection: "keep-alive",
   });
 
-  // Update every 3 seconds
-  const intervalUpdate = setInterval(() => {
-    res.write(`data: ${counter.toString()}\n\n`);
-  }, 3000);
+  // Send initial state
+  res.write(`data: ${counter.toString()}\n\n`);
+
+  // Add client to set
+  sseClients.add(res);
 
   // Close connection
   req.on("close", () => {
-    clearInterval(intervalUpdate);
+    sseClients.delete(res);
     res.end();
   });
 });
