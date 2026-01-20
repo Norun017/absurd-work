@@ -9,7 +9,7 @@ Could human collective action ever exhaust the possibilities of a 16×16 grid?
 
 ## Overview
 
-The Absurd Work let everyone to participate in "working" with a 16x16 grid. Each work (click) represent an image a grid can show by turniing one pixel from white to black, spreading from the center outward. The question is simple: Can we exhaust all 2^256 possible states of this grid?
+The Absurd Work lets everyone participate in “working” with a 16×16 grid. Each action (click) represents one image the grid can display, turning a single pixel from white to black and spreading outward from the center. The question is simple: Can we exhaust all 2^256 possible states of this grid,and if not, should we still try?
 
 **Current Version:** v0.3.5 (January 2026)
 
