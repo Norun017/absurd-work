@@ -4,7 +4,7 @@ import path from "path";
 const ROOT = path.resolve(".");
 const LOGS_DIR = path.join(ROOT, "history_logs");
 const SNAPSHOT_DIR = path.join(ROOT, "snapshots");
-const PUBLISH_DIR = path.join(ROOT, "publish", "weekly");
+const PUBLISH_DIR = path.join(ROOT, "publish");
 
 export function prepareWeeklyPublish({
   weekId, // e.g. "2026-W03"
@@ -14,14 +14,10 @@ export function prepareWeeklyPublish({
   const targetDIR = path.join(PUBLISH_DIR, weekId);
   fs.mkdirSync(targetDIR, { recursive: true });
 
-  // copy snapshot + signature
+  // copy snapshot
   fs.copyFileSync(
     path.join(SNAPSHOT_DIR, snapshotFile),
     path.join(targetDIR, snapshotFile)
-  );
-  fs.copyFileSync(
-    path.join(SNAPSHOT_DIR, `${snapshotFile}.minisig`),
-    path.join(targetDIR, `${snapshotFile}.minisig`)
   );
 
   // copy segment log

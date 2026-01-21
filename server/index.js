@@ -6,6 +6,7 @@ import fs from "fs";
 import { promises as fsPromises } from "fs";
 import path from "path";
 import { rotateLog, writeSnapshot, getPrevSnapshotPath } from "./snapshot.js";
+import { VERSION } from "./version.js";
 
 const __dirname = import.meta.dirname;
 
@@ -156,5 +157,5 @@ app.get("/health", (req, res) => {
 });
 
 app.listen(port, hostname, () => {
-  console.log(`v0.3.5 running on port ${port}`);
+  console.log(`${VERSION} running on port ${port}`);
 });

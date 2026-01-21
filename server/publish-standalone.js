@@ -47,7 +47,7 @@ console.log(`   ✅ Log: ${publishedSegmentLog} rotated`);
 // Create snapshot with hash
 console.log("📸 Creating snapshot...");
 const publishedSnapshot = writeSnapshot(counter);
-console.log(`   ✅ Snapshot: ${publishedSnapshot} created and signed`);
+console.log(`   ✅ Snapshot: ${publishedSnapshot} created`);
 
 // Publish for mirroring
 const { year, week } = getISOWeek();

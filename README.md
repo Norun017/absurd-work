@@ -34,7 +34,6 @@ The Absurd Work lets everyone participate in “working” with a 16×16 grid. E
                                 │              │
                                 │ • Log Files  │
                                 │ • Snapshots  │
-                                │ • Signatures │
                                 └──────────────┘
 ```
 
@@ -55,8 +54,8 @@ The Absurd Work lets everyone participate in “working” with a 16×16 grid. E
 **Data Integrity**
 
 - Weekly log rotation creates immutable segments (`absurd-work.log.0001`, `.0002`, etc.)
-- Cryptographic snapshots with SHA-256 hashing
-- Minisign signatures for verifiable authenticity
+- Cryptographic snapshots with SHA-256 hashing and Merkle root verification
+- Snapshot chain for temporal ordering and authenticity
 - ISO week-based publishing for archival
 
 **Archival Mirrors**
@@ -171,7 +170,7 @@ Automated weekly snapshot and publish process runs **every Sunday at midnight**.
 
 1. Stops server gracefully
 2. Rotates active log to segmented backup
-3. Creates cryptographic snapshot with signatures
+3. Creates cryptographic snapshot with Merkle root
 4. Copies files to `/publish/weekly/YYYY-WXX/` for distribution
 5. Restarts server
 
@@ -179,53 +178,99 @@ Automated weekly snapshot and publish process runs **every Sunday at midnight**.
 
 ### Snapshot Format
 
+Each weekly snapshot contains comprehensive metadata for long-term archival and verification.
+
 ```json
 {
   "protocol": "absurd-work-v0.3.5",
-  "timestamp": "2026-01-20T00:00:00.000Z",
-  "counter": "1234567890",
+  "timestamp": "2026-01-26T00:00:00.000Z",
+  "counter": "150000",
+
   "segments": {
-    "absurd-work.log.0001": "sha256_hash_here",
-    "absurd-work.log.0002": "sha256_hash_here"
+    "absurd-work.log.0001": {
+      "hash": "sha256:a1b2c3d4e5f6...",
+      "lines": 50000,
+      "firstClick": 1,
+      "lastClick": 50000,
+      "timeRange": {
+        "start": "2026-01-01T00:00:00.000Z",
+        "end": "2026-01-08T00:00:00.000Z"
+      }
+    },
+    "absurd-work.log.0002": {
+      "hash": "sha256:d4e5f6a7b8c9...",
+      "lines": 50000,
+      "firstClick": 50001,
+      "lastClick": 100000,
+      "timeRange": {
+        "start": "2026-01-08T00:00:01.000Z",
+        "end": "2026-01-15T00:00:00.000Z"
+      }
+    },
+    "absurd-work.log.0003": {
+      "hash": "sha256:g7h8i9j0k1l2...",
+      "lines": 50000,
+      "firstClick": 100001,
+      "lastClick": 150000,
+      "timeRange": {
+        "start": "2026-01-15T00:00:01.000Z",
+        "end": "2026-01-22T00:00:00.000Z"
+      }
+    }
   },
-  "inherits": "snapshot.0001.json"
+
+  "verification": {
+    "totalLines": 150000,
+    "merkleRoot": "sha256:master1234567890abcdef..."
+  },
+
+  "previousSnapshot": {
+    "file": "snapshot.0002.json",
+    "hash": "sha256:xyz789abc123...",
+    "counter": 100000
+  },
+
+  "metadata": {
+    "maintainer": "Norun",
+    "repository": "https://github.com/norun/absurd-work",
+    "website": "https://absurd-work.norun.art"
+  }
 }
 ```
 
-Each snapshot includes:
+**Snapshot Components:**
 
-- Total click counter at time of snapshot
-- SHA-256 hashes of all log segments (for verification)
-- Reference to previous snapshot (chain of custody)
-- Minisign signature for authenticity
+- **Protocol version** - Format specification for future compatibility
+- **Timestamp** - When snapshot was created
+- **Counter** - Total clicks at time of snapshot
+- **Segments** - Detailed metadata for each log segment:
+  - SHA-256 hash for integrity verification
+  - Line count and click range (first/last)
+  - Time range of clicks in the segment
+- **Verification** - Merkle root of all segment hashes for quick integrity check
+- **Previous snapshot** - Reference to prior snapshot (chain of custody)
+- **Metadata** - Maintainer and project information
 
-### Signature Verification
+### Verifying Data Integrity
 
-All snapshots are cryptographically signed with Minisign for verifiable authenticity.
-
-**Public Key (Norun):**
-```
-untrusted comment: minisign public key 169CC68FE53E7344
-RWREcz7lj8acFsROk7DPsNdIAL3pgHS9pdNtYbZQyCiTVxr1vgVHk2Kq
-```
-
-**To verify a snapshot:**
+**To verify a log segment:**
 
 ```bash
-# Install minisign
-apt-get install minisign  # Ubuntu/Debian
-brew install minisign      # macOS
+# Calculate SHA-256 hash of a segment
+sha256sum absurd-work.log.0001
 
-# Download the public key
-curl -o absurd-work.pub https://raw.githubusercontent.com/yourusername/every-icon-collective/main/server/absurd-work.pub
-
-# Verify a snapshot
-minisign -Vm snapshot.0001.json -p absurd-work.pub
-
-# Should output: Signature and comment signature verified
+# Compare with hash in snapshot.json
+# Should match the "hash" value for that segment
 ```
 
-If stewardship changes in the future, the new maintainer's public key will be documented here with the transition date.
+**To verify the entire chain:**
+
+1. Check each segment hash matches its file
+2. Verify Merkle root matches combined segment hashes
+3. Verify previous snapshot hash matches the actual file
+4. Confirm counter = sum of all segment line counts
+
+The snapshot chain creates an immutable record - each snapshot references the previous one, making it impossible to alter history without breaking the chain.
 
 ---
 
@@ -235,7 +280,6 @@ If stewardship changes in the future, the new maintainer's public key will be do
 
 - Node.js 18+
 - npm or yarn
-- minisign (for cryptographic signatures)
 
 ### Local Setup
 
@@ -320,7 +364,8 @@ This project intentionally has **no rate limiting** on clicks. The art piece exp
 - Batched write queue for high-performance click handling
 - SSE heartbeat for connection management
 - Standalone weekly publish script with PM2 integration
-- Cryptographic snapshots with Minisign signatures
+- Enhanced snapshot format with Merkle root and detailed segment metadata
+- Snapshot chain for temporal ordering and verification
 
 **v0.2** (Prototype)
 

@@ -2,7 +2,7 @@ import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { execFileSync } from "child_process";
+import { VERSION } from "./version.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -69,30 +69,119 @@ function getPrevSnapshotPath() {
   return path.join(SNAPSHOT_DIR, files[files.length - 1]);
 }
 
+function analyzeSegment(segmentPath, startingCounter) {
+  // Read segment file and extract metadata
+  const data = fs.readFileSync(segmentPath, "utf8");
+  const lines = data.split("\n").filter(Boolean);
+  const lineCount = lines.length;
+
+  if (lineCount === 0) {
+    return {
+      hash: hashFile(segmentPath),
+      lines: 0,
+      firstClick: startingCounter,
+      lastClick: startingCounter - 1,
+      timeRange: null,
+    };
+  }
+
+  // Parse timestamps (first and last)
+  const firstTimestamp = parseInt(lines[0].trim(), 10);
+  const lastTimestamp = parseInt(lines[lineCount - 1].trim(), 10);
+
+  return {
+    hash: hashFile(segmentPath),
+    lines: lineCount,
+    firstClick: startingCounter,
+    lastClick: startingCounter + lineCount - 1,
+    timeRange: {
+      start: new Date(firstTimestamp).toISOString(),
+      end: new Date(lastTimestamp).toISOString(),
+    },
+  };
+}
+
+function calculateMerkleRoot(segmentHashes) {
+  // Combine all hashes and hash again to create Merkle root
+  const combined = segmentHashes.join("");
+  const hash = crypto.createHash("sha256");
+  hash.update(combined);
+  return "sha256:" + hash.digest("hex");
+}
+
 function writeSnapshot(counter) {
   // Load past segments from previous snapshot
   let inheritedSegments = {};
+  let previousSnapshotData = null;
   const prevSnapshotPath = getPrevSnapshotPath();
+
   if (prevSnapshotPath) {
-    const prev = JSON.parse(fs.readFileSync(prevSnapshotPath), "utf8");
-    inheritedSegments = prev.segments;
+    const prev = JSON.parse(fs.readFileSync(prevSnapshotPath, "utf8"));
+    inheritedSegments = prev.segments || {};
+
+    // Store previous snapshot info for new format
+    previousSnapshotData = {
+      file: path.basename(prevSnapshotPath),
+      hash: "sha256:" + hashFile(prevSnapshotPath),
+      counter: parseInt(prev.counter, 10),
+    };
   }
 
-  // get next segment name, add new segment "file: hash" to the current segments
-  // maybe I need to fix this: the current is called rotateLog and update nextSegmentName, and use that name here
+  // Analyze new segment with metadata
   const newSegmentPath = path.join(LOGS_DIR, nextSegmentName);
+
+  // Calculate starting counter for this segment
+  let segmentStartCounter = 1;
+  if (prevSnapshotPath) {
+    const prev = JSON.parse(fs.readFileSync(prevSnapshotPath, "utf8"));
+    segmentStartCounter = parseInt(prev.counter, 10) + 1;
+  }
+
+  const newSegmentMetadata = analyzeSegment(
+    newSegmentPath,
+    segmentStartCounter
+  );
+
+  // Build segments object with full metadata
   const segments = {
     ...inheritedSegments,
-    [nextSegmentName]: hashFile(newSegmentPath),
+    [nextSegmentName]: {
+      hash: "sha256:" + newSegmentMetadata.hash,
+      lines: newSegmentMetadata.lines,
+      firstClick: newSegmentMetadata.firstClick,
+      lastClick: newSegmentMetadata.lastClick,
+      timeRange: newSegmentMetadata.timeRange,
+    },
   };
 
-  // create snapshot data, filename, path and write
+  // Calculate Merkle root from all segment hashes
+  const segmentHashes = Object.values(segments).map((seg) => {
+    // Handle both old format (string) and new format (object)
+    return typeof seg === "string" ? seg : seg.hash;
+  });
+  const merkleRoot = calculateMerkleRoot(segmentHashes);
+
+  // Calculate total lines across all segments
+  const totalLines = Object.values(segments).reduce((sum, seg) => {
+    return sum + (typeof seg === "object" ? seg.lines : 0);
+  }, 0);
+
+  // Create snapshot data with new format
   const snapshot = {
-    protocol: "absurd-work-v0.3.5",
+    protocol: `absurd-work-${VERSION}`,
     timestamp: new Date().toISOString(),
     counter: counter.toString(),
     segments,
-    inherits: prevSnapshotPath ? path.basename(prevSnapshotPath) : null,
+    verification: {
+      totalLines,
+      merkleRoot,
+    },
+    previousSnapshot: previousSnapshotData,
+    metadata: {
+      maintainer: "Norun",
+      repository: "https://github.com/norun/absurd-work",
+      website: "https://absurd-work.norun.art",
+    },
   };
 
   const fileName = prevSnapshotPath
@@ -102,15 +191,7 @@ function writeSnapshot(counter) {
 
   fs.writeFileSync(filePath, JSON.stringify(snapshot, null, 2));
 
-  // Sign after write
-  signSnapShot(filePath);
-
   return fileName;
-}
-
-function signSnapShot(snapshotPath) {
-  const PRIVATE_KEY_PATH = path.join(__dirname, "keys", "absurd-work.key");
-  execFileSync("minisign", ["-S", "-s", PRIVATE_KEY_PATH, "-m", snapshotPath]);
 }
 
 export { writeSnapshot, rotateLog, getPrevSnapshotPath };
