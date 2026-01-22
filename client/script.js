@@ -1,18 +1,31 @@
 const log = document.querySelector(".log");
 const btn = document.querySelector("button");
+const preLog = document.querySelector("#pre-log");
 const source = new EventSource(`/events`);
+const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
 const GRID_SIZE = 16;
 const totalCells = GRID_SIZE * GRID_SIZE;
+const START_DATE = new Date("2026-01-16"); // Project start date
 
 // Setup Canvas
 const canvas = document.querySelector("#canvas");
+canvas.width = 480 * dpr;
+canvas.height = 480 * dpr;
 const ctx = canvas.getContext("2d");
 const canvasSize = canvas.width;
 const cellSize = canvasSize / GRID_SIZE;
 
 let counter = 0n;
 let order;
+
+// Calculate days since start
+function updateDaysOfWork() {
+  const today = new Date();
+  const diffTime = today - START_DATE;
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  preLog.textContent = `Day ${diffDays} of work`;
+}
 
 // Init
 async function init() {
@@ -21,6 +34,7 @@ async function init() {
   const data = await res.json();
   counter = BigInt(data.counter);
   render(counter);
+  updateDaysOfWork();
 }
 
 //Init draw Grid
@@ -73,7 +87,7 @@ function render(counter) {
 // Draw Grid with Canvas
 function drawGrid() {
   // 1. Draw inner lines
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 1 * dpr;
   ctx.beginPath();
   // need to add 0.5 px This is because a 1px line drawn on a half-pixel boundary (e.g., at x=50.5) will be anti-aliased across two physical pixels.
   for (let i = 1; i < GRID_SIZE; i++) {
@@ -89,7 +103,7 @@ function drawGrid() {
   ctx.stroke();
 
   // 2. Draw outer border
-  const borderLineWidth = 2;
+  const borderLineWidth = 2 * dpr;
   // We use a small offset (borderLineWidth/2) so the line is centered on the canvas edge.
   const offset = borderLineWidth / 2;
   ctx.lineWidth = borderLineWidth;
@@ -114,9 +128,8 @@ function drawCell(col, row, color) {
 // Draw cells from digits
 
 function drawFromOrder(digits) {
-  let color;
   for (let i = 0; i < totalCells; i++) {
-    digits[i] === "0" ? (color = "white") : (color = "black");
+    const color = digits[i] === "0" ? "white" : "black";
     drawCell(order[i].x, order[i].y, color);
   }
 }
