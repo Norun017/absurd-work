@@ -138,6 +138,8 @@ button {
   text-align: center;
   padding: 0.4rem 4rem;
   border: none;
+  -webkit-tap-highlight-color: transparent; /* Remove blue flash on mobile tap */
+  touch-action: manipulation; /* Remove 300ms tap delay */
 }
 
 button:hover {
