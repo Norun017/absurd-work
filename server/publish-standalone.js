@@ -1,7 +1,11 @@
 import fs from "fs";
 import path from "path";
 import { rotateLog, writeSnapshot, getPrevSnapshotPath } from "./snapshot.js";
-import { prepareWeeklyPublish } from "./publish-prepare.js";
+import {
+  prepareWeeklyPublish,
+  pushToGitHub,
+  publishToIPFS,
+} from "./publish-prepare.js";
 import { getISOWeek } from "./time.js";
 
 const __dirname = import.meta.dirname;
@@ -51,16 +55,49 @@ console.log(`   ✅ Snapshot: ${publishedSnapshot} created`);
 
 // Publish for mirroring
 const { year, week } = getISOWeek();
+const weekId = `${year}-W${week.toString().padStart(2, "0")}`;
 
 const result = prepareWeeklyPublish({
-  weekId: `${year}-W${week.toString().padStart(2, "0")}`,
+  weekId,
   snapshotFile: publishedSnapshot,
   segmentFile: publishedSegmentLog,
 });
-console.log("✅Published:", result);
+console.log("✅ Published to folder:", result);
+
+// Push to GitHub
+console.log("───────────────────────────────────────────────");
+console.log("📤 Pushing to GitHub...");
+try {
+  const gitResult = pushToGitHub(weekId);
+  if (gitResult.message === "No changes") {
+    console.log("   ℹ️  No changes to commit");
+  } else {
+    console.log(`   ✅ Pushed to GitHub: ${weekId}`);
+  }
+} catch (error) {
+  console.error("   ❌ GitHub push failed:", error.message);
+  console.error("   ⚠️  Continuing without GitHub push...");
+}
+
+// Upload to IPFS
+console.log("───────────────────────────────────────────────");
+console.log("🌐 Uploading to IPFS...");
+try {
+  const cid = publishToIPFS(weekId);
+  if (cid) {
+    console.log(`   ✅ IPFS CID: ${cid}`);
+    console.log(`   🔗 https://ipfs.io/ipfs/${cid}`);
+  } else {
+    console.log("   ⚠️  IPFS upload skipped or failed");
+  }
+} catch (error) {
+  console.error("   ❌ IPFS upload failed:", error.message);
+  console.error("   ⚠️  Continuing without IPFS upload...");
+}
 
 console.log("═══════════════════════════════════════════════");
 console.log("✅ Weekly Publish Complete!");
 console.log(`   Final Counter: ${counter}`);
+console.log(`   Week ID: ${weekId}`);
 console.log(`   Time: ${new Date().toISOString()}`);
 console.log("═══════════════════════════════════════════════");
