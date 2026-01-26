@@ -60,7 +60,8 @@ The Absurd Work lets everyone participate in “working” with a 16×16 grid. E
 
 **Archival Mirrors**
 
-- Weekly publication units distributed via Github and IPFS
+- **GitHub Repository**: [absird-work-history](https://github.com/Norun017/absird-work-history) - Weekly snapshots and logs
+- **IPFS**: Each week published to IPFS for decentralized preservation (CIDs logged in repo)
 - Periodic archival bundles deposited with the Internet Archive
 
 ---
@@ -168,13 +169,15 @@ Automated weekly snapshot and publish process runs **every Sunday at midnight**.
 
 **What it does:**
 
-1. Stops server gracefully
-2. Rotates active log to segmented backup
-3. Creates cryptographic snapshot with Merkle root
-4. Copies files to `/publish/weekly/YYYY-WXX/` for distribution
-5. Restarts server
+1. Rotates active log to segmented backup
+2. Creates cryptographic snapshot with hash chain
+3. Copies files to `/publish/YYYY-WXX/` folder
+4. Uploads to IPFS and logs the CID
+5. Pushes to GitHub repository: [absird-work-history](https://github.com/Norun017/absird-work-history)
 
-**Downtime:** ~10-30 seconds once per week (acceptable trade-off for data integrity)
+**Publishing Destinations:**
+- **GitHub**: [github.com/Norun017/absird-work-history](https://github.com/Norun017/absird-work-history)
+- **IPFS**: Distributed storage with CIDs logged in `ipfs-cids.log`
 
 ### Snapshot Format
 
