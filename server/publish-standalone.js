@@ -64,21 +64,6 @@ const result = prepareWeeklyPublish({
 });
 console.log("✅ Published to folder:", result);
 
-// Push to GitHub
-console.log("───────────────────────────────────────────────");
-console.log("📤 Pushing to GitHub...");
-try {
-  const gitResult = pushToGitHub(weekId);
-  if (gitResult.message === "No changes") {
-    console.log("   ℹ️  No changes to commit");
-  } else {
-    console.log(`   ✅ Pushed to GitHub: ${weekId}`);
-  }
-} catch (error) {
-  console.error("   ❌ GitHub push failed:", error.message);
-  console.error("   ⚠️  Continuing without GitHub push...");
-}
-
 // Upload to IPFS
 console.log("───────────────────────────────────────────────");
 console.log("🌐 Uploading to IPFS...");
@@ -93,6 +78,21 @@ try {
 } catch (error) {
   console.error("   ❌ IPFS upload failed:", error.message);
   console.error("   ⚠️  Continuing without IPFS upload...");
+}
+
+// Push to GitHub
+console.log("───────────────────────────────────────────────");
+console.log("📤 Pushing to GitHub...");
+try {
+  const gitResult = pushToGitHub(weekId);
+  if (gitResult.message === "No changes") {
+    console.log("   ℹ️  No changes to commit");
+  } else {
+    console.log(`   ✅ Pushed to GitHub: ${weekId}`);
+  }
+} catch (error) {
+  console.error("   ❌ GitHub push failed:", error.message);
+  console.error("   ⚠️  Continuing without GitHub push...");
 }
 
 console.log("═══════════════════════════════════════════════");
