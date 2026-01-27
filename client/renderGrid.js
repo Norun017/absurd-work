@@ -1,14 +1,15 @@
 // Grid renderer for 16×16 binary visualization
 
 // Order from center spread outward using Euclidean distance
-function distanceOrder(N) {
-  const center = (N - 1) / 2;
+function distanceOrder(col, row) {
+  const centerX = (col - 1) / 2;
+  const centerY = (row - 1) / 2;
   const order = [];
 
-  for (let y = 0; y < N; y++) {
-    for (let x = 0; x < N; x++) {
-      const dx = x - center;
-      const dy = y - center;
+  for (let y = 0; y < row; y++) {
+    for (let x = 0; x < col; x++) {
+      const dx = x - centerX;
+      const dy = y - centerY;
       const d = Math.sqrt(dx * dx + dy * dy); //Compute Euclidean distance to center
 
       order.push({ x, y, d });
@@ -22,11 +23,11 @@ function distanceOrder(N) {
 }
 
 // Draw single cell
-function drawCell(ctx, col, row, color, cellSize, dpr) {
+function drawCell(ctx, col, row, color, cellSize, dpr, offsetX = 0, offsetY = 0) {
   // make sure no cell render problem due to grid offset
   const inset = 1; // half of border + grid thickness
-  const x = col * cellSize + inset;
-  const y = row * cellSize + inset;
+  const x = offsetX + col * cellSize + inset;
+  const y = offsetY + row * cellSize + inset;
   ctx.fillStyle = color;
   ctx.fillRect(x, y, cellSize - inset, cellSize - inset);
 }
@@ -36,6 +37,23 @@ function drawFromOrder(ctx, digits, order, cellSize, dpr, totalCells) {
   for (let i = 0; i < totalCells; i++) {
     const color = digits[i] === "0" ? "white" : "black";
     drawCell(ctx, order[i].x, order[i].y, color, cellSize, dpr);
+  }
+}
+
+function drawFromOrder2Bit(ctx, digits, order, cellSize, dpr, totalCells, cols, rows, canvasSize) {
+  // Calculate offset to center the grid
+  const gridWidth = cols * cellSize;
+  const gridHeight = rows * cellSize;
+  const offsetX = (canvasSize - gridWidth) / 2;
+  const offsetY = (canvasSize - gridHeight) / 2;
+
+  for (let i = 0; i < totalCells; i++) {
+    // Convert base-4 digit (0-3) to greyscale (255, 170, 85, 0)
+    const digitValue = parseInt(digits[i], 10);
+    const grey = 255 - digitValue * 85;
+    const color = `rgb(${grey}, ${grey}, ${grey})`;
+
+    drawCell(ctx, order[i].x, order[i].y, color, cellSize, dpr, offsetX, offsetY);
   }
 }
 
@@ -87,4 +105,4 @@ function drawGrid(ctx, cols, rows, canvasSize, dpr) {
   );
 }
 
-export { distanceOrder, drawCell, drawFromOrder, drawGrid };
+export { distanceOrder, drawCell, drawFromOrder, drawGrid, drawFromOrder2Bit };

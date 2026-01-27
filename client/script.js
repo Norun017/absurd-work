@@ -4,6 +4,7 @@ import {
   distanceOrder,
   drawFromOrder as drawFromOrderGrid,
   drawGrid as drawGridLines,
+  drawFromOrder2Bit,
 } from "./renderGrid.js";
 
 const log = document.querySelector(".log");
@@ -15,6 +16,10 @@ const dpr = Math.min(window.devicePixelRatio || 1, 2);
 const GRID_SIZE = 16;
 const totalCells = GRID_SIZE * GRID_SIZE;
 const START_DATE = new Date("2026-01-16"); // Project start date
+
+const GRID_2BIT_COLS = 8;
+const GRID_2BIT_ROWS = 16;
+const totalCells2bit = GRID_2BIT_COLS * GRID_2BIT_ROWS; // 128
 
 // Setup Canvas
 const canvasContainer = document.querySelector("#canvas-container");
@@ -31,6 +36,7 @@ const cellSize = canvasSize / GRID_SIZE;
 
 let counter = 0n;
 let order;
+let order2bit;
 let p5Sketch; // p5.js instance
 let renderMode = "square"; // "grid" or "square"
 
@@ -44,7 +50,8 @@ function updateDaysOfWork() {
 
 // Init
 async function init() {
-  order = distanceOrder(GRID_SIZE);
+  order = distanceOrder(GRID_SIZE, GRID_SIZE);
+  order2bit = distanceOrder(GRID_2BIT_COLS, GRID_2BIT_ROWS);
   const res = await fetch(`/read`, { method: "GET" });
   const data = await res.json();
   counter = BigInt(data.counter);
@@ -122,6 +129,7 @@ function render(counter) {
 
   if (renderMode === "grid") {
     canvasContainer.style.display = "flex";
+    ctx.clearRect(0, 0, canvasSize, canvasSize);
     drawFromOrderGrid(ctx, digits, order, cellSize, dpr, totalCells);
     drawGridLines(ctx, GRID_SIZE, GRID_SIZE, canvasSize, dpr);
   } else if (renderMode === "square") {
@@ -130,6 +138,33 @@ function render(counter) {
     if (p5Sketch) {
       p5Sketch.updateCounter(counter);
     }
+  } else if (renderMode === "grid2bit") {
+    canvasContainer.style.display = "flex";
+
+    // Convert to base-4 and pad to 128 digits
+    let digits2bit = counter.toString(4);
+    digits2bit = digits2bit.padStart(totalCells2bit, "0");
+
+    // Calculate cell size for 8×16 grid (based on larger dimension = 16)
+    const maxDim = Math.max(GRID_2BIT_COLS, GRID_2BIT_ROWS);
+    const cellSize2bit = canvasSize / maxDim;
+
+    // Clear canvas first
+    ctx.clearRect(0, 0, canvasSize, canvasSize);
+
+    // Draw cells and grid
+    drawFromOrder2Bit(
+      ctx,
+      digits2bit,
+      order2bit,
+      cellSize2bit,
+      dpr,
+      totalCells2bit,
+      GRID_2BIT_COLS,
+      GRID_2BIT_ROWS,
+      canvasSize
+    );
+    drawGridLines(ctx, GRID_2BIT_COLS, GRID_2BIT_ROWS, canvasSize, dpr);
   }
 
   log.textContent = counter; // Show counter
