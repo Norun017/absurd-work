@@ -5,7 +5,10 @@ import {
   drawFromOrder as drawFromOrderGrid,
   drawGrid as drawGridLines,
   drawFromOrder2Bit,
+  drawFromOrder4Bit,
 } from "./renderGrid.js";
+import { renderSVG } from "./renderSVG.js";
+import { renderVoxel } from "./renderVoxel.js";
 
 const log = document.querySelector(".log");
 const btn = document.querySelector("button");
@@ -21,9 +24,15 @@ const GRID_2BIT_COLS = 8;
 const GRID_2BIT_ROWS = 16;
 const totalCells2bit = GRID_2BIT_COLS * GRID_2BIT_ROWS; // 128
 
+const GRID_4BIT_COLS = 8;
+const GRID_4BIT_ROWS = 8;
+const totalCells4bit = GRID_4BIT_COLS * GRID_4BIT_ROWS; // 32
+
 // Setup Canvas
 const canvasContainer = document.querySelector("#canvas-container");
 const p5Container = document.querySelector("#p5-container");
+const svgContainer = document.querySelector("#svg-container");
+const voxelContainer = document.querySelector("#voxel-container");
 const canvas = document.createElement("canvas");
 canvas.id = "canvas";
 canvas.width = 480 * dpr;
@@ -37,8 +46,9 @@ const cellSize = canvasSize / GRID_SIZE;
 let counter = 0n;
 let order;
 let order2bit;
+let order4bit;
 let p5Sketch; // p5.js instance
-let renderMode = "square"; // "grid" or "square"
+let renderMode = "exp"; // "grid", "grid2bit", "grid4bit", "square", or "exp"
 
 // Calculate days since start
 function updateDaysOfWork() {
@@ -52,6 +62,7 @@ function updateDaysOfWork() {
 async function init() {
   order = distanceOrder(GRID_SIZE, GRID_SIZE);
   order2bit = distanceOrder(GRID_2BIT_COLS, GRID_2BIT_ROWS);
+  order4bit = distanceOrder(GRID_4BIT_COLS, GRID_4BIT_ROWS);
   const res = await fetch(`/read`, { method: "GET" });
   const data = await res.json();
   counter = BigInt(data.counter);
@@ -126,12 +137,14 @@ function render(counter) {
   // Hide all containers
   canvasContainer.style.display = "none";
   p5Container.style.display = "none";
+  svgContainer.style.display = "none";
+  voxelContainer.style.display = "none";
 
   if (renderMode === "grid") {
     canvasContainer.style.display = "flex";
     ctx.clearRect(0, 0, canvasSize, canvasSize);
     drawFromOrderGrid(ctx, digits, order, cellSize, dpr, totalCells);
-    drawGridLines(ctx, GRID_SIZE, GRID_SIZE, canvasSize, dpr);
+    drawGridLines(ctx, GRID_SIZE, GRID_SIZE, canvasSize, dpr, cellSize);
   } else if (renderMode === "square") {
     p5Container.style.display = "flex";
     // Update p5 sketch if initialized
@@ -145,26 +158,70 @@ function render(counter) {
     let digits2bit = counter.toString(4);
     digits2bit = digits2bit.padStart(totalCells2bit, "0");
 
-    // Calculate cell size for 8×16 grid (based on larger dimension = 16)
-    const maxDim = Math.max(GRID_2BIT_COLS, GRID_2BIT_ROWS);
-    const cellSize2bit = canvasSize / maxDim;
-
     // Clear canvas first
     ctx.clearRect(0, 0, canvasSize, canvasSize);
 
-    // Draw cells and grid
+    // Draw cells and grid (using base cellSize so pixels are same size as 16×16 grid)
     drawFromOrder2Bit(
       ctx,
       digits2bit,
       order2bit,
-      cellSize2bit,
+      cellSize,
       dpr,
       totalCells2bit,
       GRID_2BIT_COLS,
       GRID_2BIT_ROWS,
       canvasSize
     );
-    drawGridLines(ctx, GRID_2BIT_COLS, GRID_2BIT_ROWS, canvasSize, dpr);
+    drawGridLines(
+      ctx,
+      GRID_2BIT_COLS,
+      GRID_2BIT_ROWS,
+      canvasSize,
+      dpr,
+      cellSize
+    );
+  } else if (renderMode === "grid4bit") {
+    canvasContainer.style.display = "flex";
+
+    // Convert to base-16 (hex) and pad to 32 digits
+    let digits4bit = counter.toString(16);
+    digits4bit = digits4bit.padStart(totalCells4bit, "0");
+
+    // Clear canvas first
+    ctx.clearRect(0, 0, canvasSize, canvasSize);
+
+    // Draw cells and grid (using base cellSize so pixels are same size as 16×16 grid)
+    drawFromOrder4Bit(
+      ctx,
+      digits4bit,
+      order4bit,
+      cellSize,
+      dpr,
+      totalCells4bit,
+      GRID_4BIT_COLS,
+      GRID_4BIT_ROWS,
+      canvasSize
+    );
+    drawGridLines(
+      ctx,
+      GRID_4BIT_COLS,
+      GRID_4BIT_ROWS,
+      canvasSize,
+      dpr,
+      cellSize
+    );
+  } else if (renderMode === "exp") {
+    //svgContainer.style.display = "flex";
+    voxelContainer.style.display = "flex";
+
+    ctx.clearRect(0, 0, canvasSize, canvasSize);
+    //renderSVG("svg-container", 99999999999, 32);
+
+    // Wait for layout to be calculated before rendering
+    requestAnimationFrame(() => {
+      renderVoxel("voxel-container", counter);
+    });
   }
 
   log.textContent = counter; // Show counter

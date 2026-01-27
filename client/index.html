@@ -2,6 +2,7 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.2/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/svg.js/3.2.5/svg.min.js"></script>
     <script src="./script.js" type="module"></script>
     <link rel="icon" type="image/png" href="/icon.png" />
     <link rel="stylesheet" href="./style.css" />
@@ -41,6 +42,8 @@
       </p>
       <div id="canvas-container" class="canvas-container"></div>
       <div id="p5-container" class="canvas-container"></div>
+      <div id="svg-container" class="canvas-container"></div>
+      <div id="voxel-container" class="canvas-container"></div>
       <div class="render-toggle">
         <label>
           <input type="radio" name="render-mode" value="grid" />
@@ -51,8 +54,16 @@
           Grid2bit
         </label>
         <label>
-          <input type="radio" name="render-mode" value="square" checked />
+          <input type="radio" name="render-mode" value="grid4bit" />
+          Grid4bit
+        </label>
+        <label>
+          <input type="radio" name="render-mode" value="square" />
           Squares
+        </label>
+        <label>
+          <input type="radio" name="render-mode" value="exp" checked />
+          exp
         </label>
       </div>
       <div class="desc-container">
