@@ -1,3 +1,6 @@
+import { renderHash } from "./render.js";
+import { createP5Sketch } from "./renderp5.js";
+
 const log = document.querySelector(".log");
 const btn = document.querySelector("button");
 const preLog = document.querySelector("#pre-log");
@@ -9,15 +12,21 @@ const totalCells = GRID_SIZE * GRID_SIZE;
 const START_DATE = new Date("2026-01-16"); // Project start date
 
 // Setup Canvas
-const canvas = document.querySelector("#canvas");
+const canvasContainer = document.querySelector(".canvas-container");
+const canvas = document.createElement("canvas");
+canvas.id = "canvas";
 canvas.width = 480 * dpr;
 canvas.height = 480 * dpr;
+canvasContainer.appendChild(canvas);
+
 const ctx = canvas.getContext("2d");
 const canvasSize = canvas.width;
 const cellSize = canvasSize / GRID_SIZE;
 
 let counter = 0n;
 let order;
+let p5Sketch; // p5.js instance
+let renderMode = "square"; // "grid" or "square"
 
 // Calculate days since start
 function updateDaysOfWork() {
@@ -33,12 +42,32 @@ async function init() {
   const res = await fetch(`/read`, { method: "GET" });
   const data = await res.json();
   counter = BigInt(data.counter);
+
+  // Initialize p5 sketch once, with callback to render after setup completes
+  p5Sketch = createP5Sketch("p5-container", () => {
+    // This runs after p5 setup is complete
+    if (p5Sketch) {
+      p5Sketch.updateCounter(counter);
+    }
+  });
+
   render(counter);
   updateDaysOfWork();
+  /// For testing
+  //renderHash(counter, totalCells);
 }
 
-//Init draw Grid
+//---------------Init draw Grid-------------
 init();
+
+// Listen to toggle mode
+const toggleInputs = document.querySelectorAll('input[name="render-mode"]');
+toggleInputs.forEach((input) => {
+  input.addEventListener("change", (e) => {
+    renderMode = e.target.value;
+    render(counter);
+  });
+});
 
 // Draw Grid everytime a button is clicked
 btn.addEventListener("click", () => {
@@ -61,6 +90,7 @@ async function click() {
   // Optimistic update
   counter += 1n;
   render(counter);
+  //renderHash(counter, totalCells);
 
   try {
     const res = await fetch(`/click`, { method: "POST" });
@@ -79,39 +109,74 @@ async function click() {
 function render(counter) {
   let digits = counter.toString(2); // 1 bit (black&white) = binary digit
   digits = digits.padStart(totalCells, 0); // pad left to total cells (total digits)
-  drawFromOrder(digits);
-  drawGrid(); // Draw grid over cells
+
+  // Get containers by ID
+  const canvasContainer = document.querySelector("#canvas-container");
+  const p5Container = document.querySelector("#p5-container");
+
+  // Hide all
+  canvasContainer.style.display = "none";
+  p5Container.style.display = "none";
+
+  if (renderMode === "grid") {
+    canvasContainer.style.display = "flex";
+    drawFromOrder(digits);
+    drawGrid(GRID_SIZE, GRID_SIZE); // Draw 16×16 grid over cells
+  } else if (renderMode === "square") {
+    p5Container.style.display = "flex";
+    // Update p5 sketch if initialized
+    if (p5Sketch) {
+      p5Sketch.updateCounter(counter);
+    }
+  }
+
   log.textContent = counter; // Show counter
 }
 
-// Draw Grid with Canvas
-function drawGrid() {
+// Draw Grid with Canvas - accepts columns and rows, centers on canvas
+function drawGrid(cols = GRID_SIZE, rows = GRID_SIZE) {
+  // Calculate cell size based on grid dimensions
+  const gridCellWidth = canvasSize / cols;
+  const gridCellHeight = canvasSize / rows;
+
+  // Calculate grid dimensions
+  const gridWidth = cols * gridCellWidth;
+  const gridHeight = rows * gridCellHeight;
+
+  // Center offset (for non-square grids or grids smaller than canvas)
+  const offsetX = (canvasSize - gridWidth) / 2;
+  const offsetY = (canvasSize - gridHeight) / 2;
+
   // 1. Draw inner lines
   ctx.lineWidth = 1 * dpr;
+  ctx.strokeStyle = "#000";
   ctx.beginPath();
-  // need to add 0.5 px This is because a 1px line drawn on a half-pixel boundary (e.g., at x=50.5) will be anti-aliased across two physical pixels.
-  for (let i = 1; i < GRID_SIZE; i++) {
-    const x = i * cellSize + 0.5;
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, canvasSize);
+
+  // Vertical lines
+  for (let i = 1; i < cols; i++) {
+    const x = offsetX + i * gridCellWidth + 0.5;
+    ctx.moveTo(x, offsetY);
+    ctx.lineTo(x, offsetY + gridHeight);
   }
-  for (let i = 1; i < GRID_SIZE; i++) {
-    let y = i * cellSize + 0.5;
-    ctx.moveTo(0, y);
-    ctx.lineTo(canvasSize, y);
+
+  // Horizontal lines
+  for (let i = 1; i < rows; i++) {
+    const y = offsetY + i * gridCellHeight + 0.5;
+    ctx.moveTo(offsetX, y);
+    ctx.lineTo(offsetX + gridWidth, y);
   }
+
   ctx.stroke();
 
   // 2. Draw outer border
   const borderLineWidth = 2 * dpr;
-  // We use a small offset (borderLineWidth/2) so the line is centered on the canvas edge.
-  const offset = borderLineWidth / 2;
+  const borderOffset = borderLineWidth / 2;
   ctx.lineWidth = borderLineWidth;
   ctx.strokeRect(
-    offset,
-    offset,
-    canvasSize - borderLineWidth,
-    canvasSize - borderLineWidth
+    offsetX + borderOffset,
+    offsetY + borderOffset,
+    gridWidth - borderLineWidth,
+    gridHeight - borderLineWidth
   );
 }
 
@@ -171,3 +236,9 @@ document.addEventListener("click", (e) => {
     e.target.textContent = original;
   }, 800);
 });
+
+// For testing hash render
+/* function scrollEdge() {
+  const container = document.querySelector(".hash-container");
+  container.scrollLeft = container.scrollWidth; // Scrolls to the rightmost edge
+} */

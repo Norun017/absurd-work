@@ -244,3 +244,39 @@ footer a {
     font-size: 2.5rem;
   }
 }
+
+.hash-container {
+  text-align: center;
+    width: 10vw; /* Set a fixed width for the visible container area */
+    overflow-x: visible; /* Adds horizontal scrollbar only when content overflows */
+    /*overflow-y: hidden; /* Hides the vertical scrollbar */
+    /*white-space: nowrap; /* Prevents content from wrapping to the next line */
+  }
+
+#hash {
+  font-size: 13cqi;
+  letter-spacing: -0.5rem;
+}
+
+/* --------------------
+   Toggle Button
+-------------------- */
+
+.render-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin: 1rem 0;
+}
+
+.render-toggle label {
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.render-toggle input[type="radio"] {
+  cursor: pointer;
+}

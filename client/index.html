@@ -1,6 +1,7 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.2/p5.min.js"></script>
     <script src="./script.js" type="module"></script>
     <link rel="icon" type="image/png" href="/icon.png" />
     <link rel="stylesheet" href="./style.css" />
@@ -38,8 +39,17 @@
       <p class="desc-bottom">
         Each work flips one pixel,<br />until every possible image is revealed.
       </p>
-      <div class="canvas-container">
-        <canvas width="480" height="480" id="canvas"></canvas>
+      <div id="canvas-container" class="canvas-container"></div>
+      <div id="p5-container" class="canvas-container"></div>
+      <div class="render-toggle">
+        <label>
+          <input type="radio" name="render-mode" value="grid" />
+          Grid
+        </label>
+        <label>
+          <input type="radio" name="render-mode" value="square" checked />
+          Squares
+        </label>
       </div>
       <div class="desc-container">
         <p class="log">0</p>
@@ -49,9 +59,7 @@
     </div>
     <footer>
       <nav class="footer-links">
-        <a
-          href="https://norun017.substack.com/p/making-of-the-absurd-work"
-          target="_blank"
+        <a href="https://norun017.substack.com/t/theabsurdwork" target="_blank"
           >About</a
         >
         <a href="https://norun.art/" target="_blank">Norun.art</a>
