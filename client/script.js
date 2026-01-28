@@ -1,12 +1,8 @@
-import { createP5Sketch } from "./renderp5.js";
 import {
   distanceOrder,
   drawFromOrder as drawFromOrderGrid,
   drawGrid as drawGridLines,
-  drawFromOrder2Bit,
-  drawFromOrder4Bit,
 } from "./renderGrid.js";
-import { renderVoxel } from "./renderVoxel.js";
 
 const log = document.querySelector(".log");
 const btn = document.querySelector("button");
@@ -18,19 +14,8 @@ const GRID_SIZE = 16;
 const totalCells = GRID_SIZE * GRID_SIZE;
 const START_DATE = new Date("2026-01-16"); // Project start date
 
-const GRID_2BIT_COLS = 8;
-const GRID_2BIT_ROWS = 16;
-const totalCells2bit = GRID_2BIT_COLS * GRID_2BIT_ROWS; // 128
-
-const GRID_4BIT_COLS = 8;
-const GRID_4BIT_ROWS = 8;
-const totalCells4bit = GRID_4BIT_COLS * GRID_4BIT_ROWS; // 32
-
 // Setup Canvas
 const canvasContainer = document.querySelector("#canvas-container");
-const p5Container = document.querySelector("#p5-container");
-const svgContainer = document.querySelector("#svg-container");
-const voxelContainer = document.querySelector("#voxel-container");
 const canvas = document.createElement("canvas");
 canvas.id = "canvas";
 canvas.width = 480 * dpr;
@@ -43,19 +28,10 @@ const cellSize = canvasSize / GRID_SIZE;
 
 // State
 let counter = 0n;
-let renderMode = "voxel"; // "grid", "grid2bit", "grid4bit", "square", or "voxel"
+let renderMode = "grid"; // "grid", "grid2bit", "grid4bit", "square", or "voxel"
 
 // Pre-calculate distance orders (can be computed synchronously)
 const order = distanceOrder(GRID_SIZE, GRID_SIZE);
-const order2bit = distanceOrder(GRID_2BIT_COLS, GRID_2BIT_ROWS);
-const order4bit = distanceOrder(GRID_4BIT_COLS, GRID_4BIT_ROWS);
-
-// Initialize p5 sketch with lazy counter update
-const p5Sketch = createP5Sketch("p5-container", () => {
-  if (p5Sketch && counter > 0n) {
-    p5Sketch.updateCounter(counter);
-  }
-});
 
 // -----------Init----------
 
@@ -87,90 +63,12 @@ const RENDER_MODES = {
       drawGridLines(ctx, GRID_SIZE, GRID_SIZE, canvasSize, dpr, cellSize);
     },
   },
-
-  square: {
-    container: p5Container,
-    render: (counter) => {
-      if (p5Sketch) {
-        p5Sketch.updateCounter(counter);
-      }
-    },
-  },
-
-  grid2bit: {
-    container: canvasContainer,
-    render: (counter) => {
-      const digits2bit = counter.toString(4).padStart(totalCells2bit, "0");
-      ctx.clearRect(0, 0, canvasSize, canvasSize);
-      drawFromOrder2Bit(
-        ctx,
-        digits2bit,
-        order2bit,
-        cellSize,
-        dpr,
-        totalCells2bit,
-        GRID_2BIT_COLS,
-        GRID_2BIT_ROWS,
-        canvasSize
-      );
-      drawGridLines(
-        ctx,
-        GRID_2BIT_COLS,
-        GRID_2BIT_ROWS,
-        canvasSize,
-        dpr,
-        cellSize
-      );
-    },
-  },
-
-  grid4bit: {
-    container: canvasContainer,
-    render: (counter) => {
-      const digits4bit = counter.toString(16).padStart(totalCells4bit, "0");
-      ctx.clearRect(0, 0, canvasSize, canvasSize);
-      drawFromOrder4Bit(
-        ctx,
-        digits4bit,
-        order4bit,
-        cellSize,
-        dpr,
-        totalCells4bit,
-        GRID_4BIT_COLS,
-        GRID_4BIT_ROWS,
-        canvasSize
-      );
-      drawGridLines(
-        ctx,
-        GRID_4BIT_COLS,
-        GRID_4BIT_ROWS,
-        canvasSize,
-        dpr,
-        cellSize
-      );
-    },
-  },
-
-  voxel: {
-    container: voxelContainer,
-    render: (counter) => {
-      ctx.clearRect(0, 0, canvasSize, canvasSize);
-      requestAnimationFrame(() => {
-        renderVoxel("voxel-container", counter);
-      });
-    },
-  },
 };
 
 // -----------Render Function----------
 
 // Top level renderer
 function render(counter) {
-  // Hide all containers
-  [canvasContainer, p5Container, svgContainer, voxelContainer].forEach(
-    (container) => (container.style.display = "none")
-  );
-
   // Show and render active mode
   const mode = RENDER_MODES[renderMode];
   if (mode) {
