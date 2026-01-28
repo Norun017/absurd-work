@@ -11,6 +11,8 @@ let faceLandmarker;
 let blinkCount = 0;
 let wasEyeClosed = false;
 let onBlinkCallback = null; // Store the callback function
+let stream;
+let animationId; // Variable to hold the loop ID
 
 // Initialize the detector
 async function setupDetector(onBlink) {
@@ -29,7 +31,7 @@ async function setupDetector(onBlink) {
 }
 
 async function startWebcam() {
-  const stream = await navigator.mediaDevices.getUserMedia({
+  stream = await navigator.mediaDevices.getUserMedia({
     video: true,
   });
   video.srcObject = stream;
@@ -59,7 +61,23 @@ async function predictWebcam() {
       wasEyeClosed = false;
     }
   }
-  requestAnimationFrame(predictWebcam);
+  animationId = requestAnimationFrame(predictWebcam);
 }
 
-export { setupDetector };
+function stopWebCam() {
+  if (stream) {
+    // 1. Get all tracks (video/audio) and stop them
+    const tracks = stream.getTracks();
+    tracks.forEach((track) => track.stop());
+
+    // 2. Clear the video source
+    video.srcObject = null;
+
+    // 3. (Optional) Stop the AI loop
+    cancelAnimationFrame(animationId);
+
+    console.log("Webcam stopped and hardware light turned off.");
+  }
+}
+
+export { setupDetector, stopWebCam };

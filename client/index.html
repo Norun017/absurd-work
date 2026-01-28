@@ -1,5 +1,6 @@
 <html>
   <head>
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.2/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/svg.js/3.2.5/svg.min.js"></script>
@@ -40,7 +41,14 @@
   </head>
   <body>
     <div class="header">
-      <h1>The Absurd Work</h1>
+      <h1>
+        The Absurd
+        <select id="mode-selector" class="mode-dropdown">
+          <option value="work">Work</option>
+          <option value="blink">Blink</option>
+        </select>
+        &#9662
+      </h1>
     </div>
     <div class="main-wrapper">
       <p id="sub-h1">(v0.3.5)</p>
@@ -63,7 +71,7 @@
           playsinline
         ></video>
       </div>
-      <div class="render-toggle">
+      <!-- <div class="render-toggle">
         <label>
           <input type="radio" name="render-mode" value="grid" checked />
           Grid
@@ -84,7 +92,7 @@
           <input type="radio" name="render-mode" value="voxel" />
           Voxels
         </label>
-      </div>
+      </div> -->
       <div class="desc-container">
         <p class="log">0</p>
         <button>work</button>

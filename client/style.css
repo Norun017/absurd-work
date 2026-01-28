@@ -95,6 +95,40 @@ h1 {
   text-align: center;
   text-transform: uppercase;
   font-size: 3.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.mode-dropdown {
+  font-family: "Lucida Console", monospace;
+  font-size: 3.3rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: white;
+  background: black;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  outline: none;
+  text-align: center;
+ 
+  text-underline-offset: 0.3rem;
+}
+
+.mode-dropdown:hover {
+  text-decoration-style: solid;
+}
+
+.mode-dropdown option {
+  font-family: "Lucida Console", monospace;
+  font-size: 1rem;
+  text-transform: uppercase;
 }
 
 p {
@@ -259,7 +293,7 @@ footer a {
     grid-column: unset;
     justify-self: unset;
     width: 86%;
-    max-width: 320px;
+    max-width: 90px;
     height: auto;
   }
 
@@ -291,6 +325,10 @@ footer a {
 
 @media (max-width: 600px) {
   h1 {
+    font-size: 2.5rem;
+  }
+
+  .mode-dropdown {
     font-size: 2.5rem;
   }
 }

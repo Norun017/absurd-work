@@ -7,13 +7,14 @@ import {
   drawFromOrder4Bit,
 } from "./renderGrid.js";
 import { renderVoxel } from "./renderVoxel.js";
-import { setupDetector } from "./blink.js";
+import { setupDetector, stopWebCam } from "./blink.js";
 
 const log = document.querySelector(".log");
 const btn = document.querySelector("button");
 const preLog = document.querySelector("#pre-log");
 const source = new EventSource(`/events`);
 const dpr = Math.min(window.devicePixelRatio || 1, 2);
+const modeSelector = document.querySelector("#mode-selector");
 
 const GRID_SIZE = 16;
 const totalCells = GRID_SIZE * GRID_SIZE;
@@ -32,6 +33,7 @@ const canvasContainer = document.querySelector("#canvas-container");
 const p5Container = document.querySelector("#p5-container");
 const svgContainer = document.querySelector("#svg-container");
 const voxelContainer = document.querySelector("#voxel-container");
+const webCam = document.querySelector("#webcam");
 const canvas = document.createElement("canvas");
 canvas.id = "canvas";
 canvas.width = 480 * dpr;
@@ -45,6 +47,7 @@ const cellSize = canvasSize / GRID_SIZE;
 // State
 let counter = 0n;
 let renderMode = "grid"; // "grid", "grid2bit", "grid4bit", "square", or "voxel"
+let inputMode = "work"; // "work" or "blink"
 
 // Pre-calculate distance orders (can be computed synchronously)
 const order = distanceOrder(GRID_SIZE, GRID_SIZE);
@@ -57,6 +60,9 @@ const p5Sketch = createP5Sketch("p5-container", () => {
     p5Sketch.updateCounter(counter);
   }
 });
+
+// Not show Webcam by default
+webCam.style.display = "none";
 
 // -----------Init----------
 
@@ -72,8 +78,6 @@ async function init() {
     console.error("Failed to initialize:", error);
   }
 }
-
-setupDetector(handleClick);
 
 init();
 
@@ -203,6 +207,21 @@ async function handleClick() {
 }
 
 // -----------Event Listeners----------
+
+// Input mode selector (Work vs Blink)
+modeSelector.addEventListener("change", (e) => {
+  inputMode = e.target.value;
+
+  if (inputMode === "blink") {
+    // Enable blink detection
+    webCam.style.display = "block";
+    setupDetector(handleClick);
+  } else {
+    // Disable blink detection
+    webCam.style.display = "none";
+    stopWebCam();
+  }
+});
 
 // Render mode toggle
 const toggleInputs = document.querySelectorAll('input[name="render-mode"]');
