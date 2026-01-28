@@ -121,8 +121,8 @@ function renderVoxel(containerId, counter) {
   const material = new THREE.MeshStandardMaterial({
     color: 0x000000,
     emissive: 0x00000,
-    specular: 0xffffff,
-    shininess: 50,
+    /* specular: 0xffffff,
+    shininess: 50, */
     metalness: 0,
     roughness: 0,
     /* transparent: true,

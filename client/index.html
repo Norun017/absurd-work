@@ -48,13 +48,24 @@
       <p class="desc-bottom">
         Each work flips one pixel,<br />until every possible image is revealed.
       </p>
-      <div id="canvas-container" class="canvas-container"></div>
-      <div id="p5-container" class="canvas-container"></div>
-      <div id="svg-container" class="canvas-container"></div>
-      <div id="voxel-container" class="canvas-container"></div>
+
+      <div class="render-webcam-wrapper">
+        <div class="render-containers">
+          <div id="canvas-container" class="canvas-container"></div>
+          <div id="p5-container" class="canvas-container"></div>
+          <div id="svg-container" class="canvas-container"></div>
+          <div id="voxel-container" class="canvas-container"></div>
+        </div>
+        <video
+          id="webcam"
+          style="transform: scaleX(-1)"
+          autoplay
+          playsinline
+        ></video>
+      </div>
       <div class="render-toggle">
         <label>
-          <input type="radio" name="render-mode" value="grid" />
+          <input type="radio" name="render-mode" value="grid" checked />
           Grid
         </label>
         <label>
@@ -70,7 +81,7 @@
           Squares
         </label>
         <label>
-          <input type="radio" name="render-mode" value="voxel" checked />
+          <input type="radio" name="render-mode" value="voxel" />
           Voxels
         </label>
       </div>

@@ -7,6 +7,7 @@ import {
   drawFromOrder4Bit,
 } from "./renderGrid.js";
 import { renderVoxel } from "./renderVoxel.js";
+import { setupDetector } from "./blink.js";
 
 const log = document.querySelector(".log");
 const btn = document.querySelector("button");
@@ -43,7 +44,7 @@ const cellSize = canvasSize / GRID_SIZE;
 
 // State
 let counter = 0n;
-let renderMode = "voxel"; // "grid", "grid2bit", "grid4bit", "square", or "voxel"
+let renderMode = "grid"; // "grid", "grid2bit", "grid4bit", "square", or "voxel"
 
 // Pre-calculate distance orders (can be computed synchronously)
 const order = distanceOrder(GRID_SIZE, GRID_SIZE);
@@ -71,6 +72,8 @@ async function init() {
     console.error("Failed to initialize:", error);
   }
 }
+
+setupDetector(handleClick);
 
 init();
 
