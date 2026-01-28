@@ -101,34 +101,36 @@ h1 {
   gap: 0.5rem;
 }
 
-.mode-dropdown {
+.mode-button {
   font-family: "Lucida Console", monospace;
   font-size: 3.3rem;
   font-weight: bold;
   text-transform: uppercase;
-  color: white;
-  background: black;
+  color: black;
   border: none;
   cursor: pointer;
   padding: 0;
   margin: 0;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
   outline: none;
   text-align: center;
- 
-  text-underline-offset: 0.3rem;
+  text-decoration: underline;
+  text-decoration-thickness: 0.2rem;
+  text-underline-offset: 0.2rem;
+  background: transparent;
+  animation: blink 2s steps(1) infinite;
 }
 
-.mode-dropdown:hover {
+/* Define the animation behavior */
+@keyframes blink {
+  95% {
+    opacity: 0;
+  }
+}
+
+.mode-button:hover {
   text-decoration-style: solid;
-}
-
-.mode-dropdown option {
-  font-family: "Lucida Console", monospace;
-  font-size: 1rem;
-  text-transform: uppercase;
+  color: white;
+  background: black;
 }
 
 p {
@@ -228,7 +230,7 @@ footer {
   position: fixed;
   bottom: 0;
   left: 0;
-  width: 100%;
+  width: 35%;
 }
 
 .footer-links {
@@ -328,7 +330,7 @@ footer a {
     font-size: 2.5rem;
   }
 
-  .mode-dropdown {
+  .mode-button {
     font-size: 2.5rem;
   }
 }

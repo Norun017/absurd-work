@@ -10,7 +10,7 @@ import { renderVoxel } from "./renderVoxel.js";
 import { setupDetector, stopWebCam } from "./blink.js";
 
 const log = document.querySelector(".log");
-const btn = document.querySelector("button");
+const btn = document.querySelector("#work-btn");
 const preLog = document.querySelector("#pre-log");
 const source = new EventSource(`/events`);
 const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -209,8 +209,12 @@ async function handleClick() {
 // -----------Event Listeners----------
 
 // Input mode selector (Work vs Blink)
-modeSelector.addEventListener("change", (e) => {
-  inputMode = e.target.value;
+modeSelector.addEventListener("click", () => {
+  // Toggle between work and blink
+  inputMode = inputMode === "work" ? "blink" : "work";
+
+  // Update button text
+  modeSelector.textContent = inputMode === "work" ? "Work" : "Blink";
 
   if (inputMode === "blink") {
     // Enable blink detection
