@@ -3,6 +3,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.2/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/svg.js/3.2.5/svg.min.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.180.0/three.module.min.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+        }
+      }
+    </script>
     <script src="./script.js" type="module"></script>
     <link rel="icon" type="image/png" href="/icon.png" />
     <link rel="stylesheet" href="./style.css" />
@@ -62,8 +70,8 @@
           Squares
         </label>
         <label>
-          <input type="radio" name="render-mode" value="exp" checked />
-          exp
+          <input type="radio" name="render-mode" value="voxel" checked />
+          Voxels
         </label>
       </div>
       <div class="desc-container">

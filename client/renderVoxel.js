@@ -1,18 +1,46 @@
-import * as THREE from "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.180.0/three.module.min.js";
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 let voxelInstance = null; // Store the current instance
 
 function renderVoxel(containerId, counter) {
   const container = document.getElementById(containerId);
 
-  // Store previous rotation if it exists
-  let previousRotation = { x: 0, y: 0, z: 0 };
-  if (voxelInstance && voxelInstance.group) {
-    previousRotation = {
-      x: voxelInstance.group.rotation.x,
-      y: voxelInstance.group.rotation.y,
-      z: voxelInstance.group.rotation.z,
-    };
+  // Store previous camera and controls state if it exists
+  let previousState = {
+    rotation: { x: 0, y: 0, z: 0 },
+    cameraPosition: { x: 0, y: 0, z: 10 },
+    controlsTarget: { x: 0, y: 0, z: 0 },
+    controlsRotation: { theta: 0, phi: 0 },
+  };
+
+  if (voxelInstance) {
+    if (voxelInstance.group) {
+      previousState.rotation = {
+        x: voxelInstance.group.rotation.x,
+        y: voxelInstance.group.rotation.y,
+        z: voxelInstance.group.rotation.z,
+      };
+    }
+    if (voxelInstance.camera) {
+      previousState.cameraPosition = {
+        x: voxelInstance.camera.position.x,
+        y: voxelInstance.camera.position.y,
+        z: voxelInstance.camera.position.z,
+      };
+    }
+    if (voxelInstance.controls) {
+      previousState.controlsTarget = {
+        x: voxelInstance.controls.target.x,
+        y: voxelInstance.controls.target.y,
+        z: voxelInstance.controls.target.z,
+      };
+      // Store spherical coordinates (theta and phi) for orbit rotation
+      previousState.controlsRotation = {
+        theta: voxelInstance.controls.getAzimuthalAngle(),
+        phi: voxelInstance.controls.getPolarAngle(),
+      };
+    }
   }
 
   // Clean up previous instance
@@ -57,6 +85,31 @@ function renderVoxel(containerId, counter) {
   renderer.setSize(480, 480);
   container.appendChild(renderer.domElement);
 
+  // Restore camera position
+  camera.position.set(
+    previousState.cameraPosition.x,
+    previousState.cameraPosition.y,
+    previousState.cameraPosition.z
+  );
+
+  // Add orbit control
+  const controls = new OrbitControls(camera, renderer.domElement);
+
+  controls.enableDamping = true; // Adds weight and smoothness
+  controls.dampingFactor = 0.05;
+  controls.autoRotate = true; // Keeps it spinning when you aren't touching it
+  controls.autoRotateSpeed = 2.0;
+
+  // Restore controls target and rotation
+  controls.target.set(
+    previousState.controlsTarget.x,
+    previousState.controlsTarget.y,
+    previousState.controlsTarget.z
+  );
+
+  // Update controls to apply the restored state
+  controls.update();
+
   // 2. Convert to binary strings
   const totalVoxels = 252;
   const digits = counter.toString(2).padStart(totalVoxels, "0");
@@ -64,11 +117,17 @@ function renderVoxel(containerId, counter) {
   // 3. Create Voxels
   // Arrange them in a 7x7x7 block (but not more than 256 voxels)
   const geometry = new THREE.BoxGeometry(1, 1, 1);
-  const material = new THREE.MeshPhongMaterial({
+  //const geometry = new THREE.SphereGeometry(0.6, 32, 16);
+  const material = new THREE.MeshStandardMaterial({
     color: 0x000000,
-    emissive: 0x000000,
+    emissive: 0x00000,
     specular: 0xffffff,
-    shininess: 100,
+    shininess: 50,
+    metalness: 0,
+    roughness: 0,
+    /* transparent: true,
+    opacity: 0.2,
+    depthWrite: false, */
   });
 
   const group = new THREE.Group();
@@ -76,7 +135,6 @@ function renderVoxel(containerId, counter) {
   const dimY = 6;
   const dimZ = 7;
   const order = distanceOrder3D(dimX, dimY, dimZ, totalVoxels); // limit to 256 voxels
-  console.log(order);
   let bitIndex = 0;
 
   order.forEach((pos) => {
@@ -92,8 +150,14 @@ function renderVoxel(containerId, counter) {
       const lineMaterial = new THREE.LineBasicMaterial({
         color: 0xffffff,
         linewidth: 2,
+        depthTest: true,
+        depthWrite: true,
       });
       const borderLine = new THREE.LineSegments(edges, lineMaterial);
+
+      // Slightly scale up the edges to prevent z-fighting
+      borderLine.scale.multiplyScalar(1.001);
+
       voxel.add(borderLine);
 
       group.add(voxel);
@@ -101,50 +165,39 @@ function renderVoxel(containerId, counter) {
     bitIndex++;
   });
 
-  /* for (let z = 0; z < 7; z++) {
-    for (let y = 0; y < 6; y++) {
-      for (let x = 0; x < 6; x++) {
-        if (bitIndex < 256 && digits[bitIndex] === "1") {
-          const voxel = new THREE.Mesh(geometry, material);
-          voxel.position.set(x - 2.5, y - 2.5, z - 3);
-          group.add(voxel);
-        }
-        bitIndex++;
-      }
-    }
-  } */
-
   // Restore previous rotation
-  group.rotation.x = previousRotation.x;
-  group.rotation.y = previousRotation.y;
-  group.rotation.z = previousRotation.z;
+  group.rotation.x = previousState.rotation.x;
+  group.rotation.y = previousState.rotation.y;
+  group.rotation.z = previousState.rotation.z;
 
   scene.add(group);
 
   // Add wireframe border
-  const borderGeometry = new THREE.BoxGeometry(dimX, dimY, dimZ);
+  /* const borderGeometry = new THREE.BoxGeometry(dimX, dimY, dimZ);
   const borderEdges = new THREE.EdgesGeometry(borderGeometry);
-  const borderMaterial = new THREE.LineBasicMaterial({ color: 0x333333 });
+  const borderMaterial = new THREE.LineBasicMaterial({ color: 0xe5e5e5 });
   const borderCube = new THREE.LineSegments(borderEdges, borderMaterial);
   // Center the border at same position as voxels
   borderCube.position.set(0, 0, 0);
-  group.add(borderCube);
+  group.add(borderCube); */
 
   // 4. Lighting
   const light = new THREE.DirectionalLight(0xffffff, 1);
-  light.position.set(5, 5, 5).normalize();
+  //light.position.set(5, 5, 5).normalize();
+  const HemisphereLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
   scene.add(light);
-  scene.add(new THREE.AmbientLight(0x404040));
-
-  // Position camera further back to see all voxels
-  camera.position.z = 10;
+  //scene.add(new THREE.AmbientLight(0xffffff, 1));
 
   // 5. Animation
   let animationId;
   function animate() {
     animationId = requestAnimationFrame(animate);
-    group.rotation.y += 0.01;
+    //group.rotation.y += 0.001;
     //group.rotation.x += 0.001;
+
+    // Required if enableDamping or autoRotate is on
+    controls.update();
+
     renderer.render(scene, camera);
   }
   animate();
@@ -156,6 +209,7 @@ function renderVoxel(containerId, counter) {
     scene,
     camera,
     group, // Store the group to access rotation later
+    controls, // Store controls to access state later
   };
 }
 

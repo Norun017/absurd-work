@@ -1,4 +1,3 @@
-import { renderHash } from "./render.js";
 import { createP5Sketch } from "./renderp5.js";
 import {
   distanceOrder,
@@ -7,7 +6,6 @@ import {
   drawFromOrder2Bit,
   drawFromOrder4Bit,
 } from "./renderGrid.js";
-import { renderSVG } from "./renderSVG.js";
 import { renderVoxel } from "./renderVoxel.js";
 
 const log = document.querySelector(".log");
@@ -43,82 +41,156 @@ const ctx = canvas.getContext("2d");
 const canvasSize = canvas.width;
 const cellSize = canvasSize / GRID_SIZE;
 
+// State
 let counter = 0n;
-let order;
-let order2bit;
-let order4bit;
-let p5Sketch; // p5.js instance
-let renderMode = "exp"; // "grid", "grid2bit", "grid4bit", "square", or "exp"
+let renderMode = "voxel"; // "grid", "grid2bit", "grid4bit", "square", or "voxel"
 
-// Calculate days since start
-function updateDaysOfWork() {
-  const today = new Date();
-  const diffTime = today - START_DATE;
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  preLog.textContent = `Day ${diffDays} of work`;
-}
+// Pre-calculate distance orders (can be computed synchronously)
+const order = distanceOrder(GRID_SIZE, GRID_SIZE);
+const order2bit = distanceOrder(GRID_2BIT_COLS, GRID_2BIT_ROWS);
+const order4bit = distanceOrder(GRID_4BIT_COLS, GRID_4BIT_ROWS);
 
-// Init
+// Initialize p5 sketch with lazy counter update
+const p5Sketch = createP5Sketch("p5-container", () => {
+  if (p5Sketch && counter > 0n) {
+    p5Sketch.updateCounter(counter);
+  }
+});
+
+// -----------Init----------
+
 async function init() {
-  order = distanceOrder(GRID_SIZE, GRID_SIZE);
-  order2bit = distanceOrder(GRID_2BIT_COLS, GRID_2BIT_ROWS);
-  order4bit = distanceOrder(GRID_4BIT_COLS, GRID_4BIT_ROWS);
-  const res = await fetch(`/read`, { method: "GET" });
-  const data = await res.json();
-  counter = BigInt(data.counter);
+  try {
+    const res = await fetch(`/read`, { method: "GET" });
+    const data = await res.json();
+    counter = BigInt(data.counter);
 
-  // Initialize p5 sketch once, with callback to render after setup completes
-  p5Sketch = createP5Sketch("p5-container", () => {
-    // This runs after p5 setup is complete
-    if (p5Sketch) {
-      p5Sketch.updateCounter(counter);
-    }
-  });
-
-  render(counter);
-  updateDaysOfWork();
-  /// For testing
-  //renderHash(counter, totalCells);
+    render(counter);
+    updateDaysOfWork();
+  } catch (error) {
+    console.error("Failed to initialize:", error);
+  }
 }
 
-//---------------Init draw Grid-------------
 init();
 
-// Listen to toggle mode
-const toggleInputs = document.querySelectorAll('input[name="render-mode"]');
-toggleInputs.forEach((input) => {
-  input.addEventListener("change", (e) => {
-    renderMode = e.target.value;
-    render(counter);
-  });
-});
+// -----------Render Configuration----------
 
-// Draw Grid everytime a button is clicked
-btn.addEventListener("click", () => {
-  click();
-});
+// Render mode configuration
+const RENDER_MODES = {
+  grid: {
+    container: canvasContainer,
+    render: (counter) => {
+      const digits = counter.toString(2).padStart(totalCells, "0");
+      ctx.clearRect(0, 0, canvasSize, canvasSize);
+      drawFromOrderGrid(ctx, digits, order, cellSize, dpr, totalCells);
+      drawGridLines(ctx, GRID_SIZE, GRID_SIZE, canvasSize, dpr, cellSize);
+    },
+  },
 
-// Listen to SSE
-source.onmessage = (e) => {
-  const global = BigInt(e.data);
-  if (global > counter) {
-    counter = global;
-    render(counter);
-  }
+  square: {
+    container: p5Container,
+    render: (counter) => {
+      if (p5Sketch) {
+        p5Sketch.updateCounter(counter);
+      }
+    },
+  },
+
+  grid2bit: {
+    container: canvasContainer,
+    render: (counter) => {
+      const digits2bit = counter.toString(4).padStart(totalCells2bit, "0");
+      ctx.clearRect(0, 0, canvasSize, canvasSize);
+      drawFromOrder2Bit(
+        ctx,
+        digits2bit,
+        order2bit,
+        cellSize,
+        dpr,
+        totalCells2bit,
+        GRID_2BIT_COLS,
+        GRID_2BIT_ROWS,
+        canvasSize
+      );
+      drawGridLines(
+        ctx,
+        GRID_2BIT_COLS,
+        GRID_2BIT_ROWS,
+        canvasSize,
+        dpr,
+        cellSize
+      );
+    },
+  },
+
+  grid4bit: {
+    container: canvasContainer,
+    render: (counter) => {
+      const digits4bit = counter.toString(16).padStart(totalCells4bit, "0");
+      ctx.clearRect(0, 0, canvasSize, canvasSize);
+      drawFromOrder4Bit(
+        ctx,
+        digits4bit,
+        order4bit,
+        cellSize,
+        dpr,
+        totalCells4bit,
+        GRID_4BIT_COLS,
+        GRID_4BIT_ROWS,
+        canvasSize
+      );
+      drawGridLines(
+        ctx,
+        GRID_4BIT_COLS,
+        GRID_4BIT_ROWS,
+        canvasSize,
+        dpr,
+        cellSize
+      );
+    },
+  },
+
+  voxel: {
+    container: voxelContainer,
+    render: (counter) => {
+      ctx.clearRect(0, 0, canvasSize, canvasSize);
+      requestAnimationFrame(() => {
+        renderVoxel("voxel-container", counter);
+      });
+    },
+  },
 };
 
-// -----------Click & Update ----------
+// -----------Render Function----------
 
-async function click() {
-  const prevCounter = counter; // For revert back if write failed
+// Top level renderer
+function render(counter) {
+  // Hide all containers
+  [canvasContainer, p5Container, svgContainer, voxelContainer].forEach(
+    (container) => (container.style.display = "none")
+  );
+
+  // Show and render active mode
+  const mode = RENDER_MODES[renderMode];
+  if (mode) {
+    mode.container.style.display = "flex";
+    mode.render(counter);
+  }
+
+  log.textContent = counter;
+}
+
+// -----------Click Handler----------
+
+async function handleClick() {
+  const prevCounter = counter;
   // Optimistic update
   counter += 1n;
   render(counter);
-  //renderHash(counter, totalCells);
 
   try {
     const res = await fetch(`/click`, { method: "POST" });
-    // Handle non-2xx HTTP status
     if (!res.ok) throw new Error(`Server error: ${res.status}`);
   } catch {
     // Rollback
@@ -127,105 +199,28 @@ async function click() {
   }
 }
 
-// -----------Draw functions----------
+// -----------Event Listeners----------
 
-// Top level renderer
-function render(counter) {
-  let digits = counter.toString(2); // 1 bit (black&white) = binary digit
-  digits = digits.padStart(totalCells, 0); // pad left to total cells (total digits)
+// Render mode toggle
+const toggleInputs = document.querySelectorAll('input[name="render-mode"]');
+toggleInputs.forEach((input) => {
+  input.addEventListener("change", (e) => {
+    renderMode = e.target.value;
+    render(counter);
+  });
+});
 
-  // Hide all containers
-  canvasContainer.style.display = "none";
-  p5Container.style.display = "none";
-  svgContainer.style.display = "none";
-  voxelContainer.style.display = "none";
+// Click button
+btn.addEventListener("click", handleClick);
 
-  if (renderMode === "grid") {
-    canvasContainer.style.display = "flex";
-    ctx.clearRect(0, 0, canvasSize, canvasSize);
-    drawFromOrderGrid(ctx, digits, order, cellSize, dpr, totalCells);
-    drawGridLines(ctx, GRID_SIZE, GRID_SIZE, canvasSize, dpr, cellSize);
-  } else if (renderMode === "square") {
-    p5Container.style.display = "flex";
-    // Update p5 sketch if initialized
-    if (p5Sketch) {
-      p5Sketch.updateCounter(counter);
-    }
-  } else if (renderMode === "grid2bit") {
-    canvasContainer.style.display = "flex";
-
-    // Convert to base-4 and pad to 128 digits
-    let digits2bit = counter.toString(4);
-    digits2bit = digits2bit.padStart(totalCells2bit, "0");
-
-    // Clear canvas first
-    ctx.clearRect(0, 0, canvasSize, canvasSize);
-
-    // Draw cells and grid (using base cellSize so pixels are same size as 16×16 grid)
-    drawFromOrder2Bit(
-      ctx,
-      digits2bit,
-      order2bit,
-      cellSize,
-      dpr,
-      totalCells2bit,
-      GRID_2BIT_COLS,
-      GRID_2BIT_ROWS,
-      canvasSize
-    );
-    drawGridLines(
-      ctx,
-      GRID_2BIT_COLS,
-      GRID_2BIT_ROWS,
-      canvasSize,
-      dpr,
-      cellSize
-    );
-  } else if (renderMode === "grid4bit") {
-    canvasContainer.style.display = "flex";
-
-    // Convert to base-16 (hex) and pad to 32 digits
-    let digits4bit = counter.toString(16);
-    digits4bit = digits4bit.padStart(totalCells4bit, "0");
-
-    // Clear canvas first
-    ctx.clearRect(0, 0, canvasSize, canvasSize);
-
-    // Draw cells and grid (using base cellSize so pixels are same size as 16×16 grid)
-    drawFromOrder4Bit(
-      ctx,
-      digits4bit,
-      order4bit,
-      cellSize,
-      dpr,
-      totalCells4bit,
-      GRID_4BIT_COLS,
-      GRID_4BIT_ROWS,
-      canvasSize
-    );
-    drawGridLines(
-      ctx,
-      GRID_4BIT_COLS,
-      GRID_4BIT_ROWS,
-      canvasSize,
-      dpr,
-      cellSize
-    );
-  } else if (renderMode === "exp") {
-    //svgContainer.style.display = "flex";
-    voxelContainer.style.display = "flex";
-
-    ctx.clearRect(0, 0, canvasSize, canvasSize);
-    //renderSVG("svg-container", 99999999999, 32);
-
-    // Wait for layout to be calculated before rendering
-    requestAnimationFrame(() => {
-      renderVoxel("voxel-container", counter);
-    });
+// Server-Sent Events for real-time updates
+source.onmessage = (e) => {
+  const global = BigInt(e.data);
+  if (global > counter) {
+    counter = global;
+    render(counter);
   }
-
-  log.textContent = counter; // Show counter
-}
+};
 
 // Crypto wallet copy button
 document.addEventListener("click", (e) => {
@@ -242,8 +237,12 @@ document.addEventListener("click", (e) => {
   }, 800);
 });
 
-// For testing hash render
-/* function scrollEdge() {
-  const container = document.querySelector(".hash-container");
-  container.scrollLeft = container.scrollWidth; // Scrolls to the rightmost edge
-} */
+// -----------Utility Functions----------
+
+// Calculate days since start
+function updateDaysOfWork() {
+  const today = new Date();
+  const diffTime = today - START_DATE;
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  preLog.textContent = `Day ${diffDays} of work`;
+}
