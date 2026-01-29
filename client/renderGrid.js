@@ -49,97 +49,6 @@ function drawFromOrder(ctx, digits, order, cellSize, dpr, totalCells) {
   }
 }
 
-function drawFromOrder2Bit(
-  ctx,
-  digits,
-  order,
-  cellSize,
-  dpr,
-  totalCells,
-  cols,
-  rows,
-  canvasSize
-) {
-  // Calculate offset to center the grid
-  const gridWidth = cols * cellSize;
-  const gridHeight = rows * cellSize;
-  const offsetX = (canvasSize - gridWidth) / 2;
-  const offsetY = (canvasSize - gridHeight) / 2;
-
-  for (let i = 0; i < totalCells; i++) {
-    // Convert base-4 digit (0-3) to greyscale (255, 170, 85, 0)
-    const digitValue = parseInt(digits[i], 10);
-    const grey = 255 - digitValue * 85;
-    const color = `rgb(${grey}, ${grey}, ${grey})`;
-
-    drawCell(
-      ctx,
-      order[i].x,
-      order[i].y,
-      color,
-      cellSize,
-      dpr,
-      offsetX,
-      offsetY
-    );
-  }
-}
-
-// RGBI color palette (4-bit CGA colors) - reversed order
-const RGBI_COLORS = [
-  "rgb(255, 255, 255)", // 0x0: White
-  "rgb(170, 170, 170)", // 0x1: Light Gray
-  "rgb(85, 255, 255)", // 0x2: Cyan
-  "rgb(0, 170, 170)", // 0x3: Dark Cyan
-  "rgb(255, 85, 255)", // 0x4: Magenta
-  "rgb(170, 0, 170)", // 0x5: Dark Magenta
-  "rgb(85, 85, 255)", // 0x6: Blue
-  "rgb(0, 0, 170)", // 0x7: Dark Blue
-  "rgb(255, 255, 85)", // 0x8: Yellow
-  "rgb(170, 85, 0)", // 0x9: Brown/Dark Yellow
-  "rgb(85, 255, 85)", // 0xA: Green
-  "rgb(0, 170, 0)", // 0xB: Dark Green
-  "rgb(255, 85, 85)", // 0xC: Red
-  "rgb(170, 0, 0)", // 0xD: Dark Red
-  "rgb(85, 85, 85)", // 0xE: Dark Gray
-  "rgb(0, 0, 0)", // 0xF: Black
-];
-
-function drawFromOrder4Bit(
-  ctx,
-  digits,
-  order,
-  cellSize,
-  dpr,
-  totalCells,
-  cols,
-  rows,
-  canvasSize
-) {
-  // Calculate offset to center the grid
-  const gridWidth = cols * cellSize;
-  const gridHeight = rows * cellSize;
-  const offsetX = (canvasSize - gridWidth) / 2;
-  const offsetY = (canvasSize - gridHeight) / 2;
-
-  for (let i = 0; i < totalCells; i++) {
-    // Convert hex digit (0-F) to RGBI color
-    const digitValue = parseInt(digits[i], 16);
-    const color = RGBI_COLORS[digitValue];
-
-    drawCell(
-      ctx,
-      order[i].x,
-      order[i].y,
-      color,
-      cellSize,
-      dpr,
-      offsetX,
-      offsetY
-    );
-  }
-}
-
 // Draw grid lines and border - accepts columns, rows, and cellSize
 function drawGrid(ctx, cols, rows, canvasSize, dpr, cellSize) {
   // Calculate grid dimensions using provided cellSize
@@ -183,11 +92,4 @@ function drawGrid(ctx, cols, rows, canvasSize, dpr, cellSize) {
   );
 }
 
-export {
-  distanceOrder,
-  drawCell,
-  drawFromOrder,
-  drawGrid,
-  drawFromOrder2Bit,
-  drawFromOrder4Bit,
-};
+export { distanceOrder, drawCell, drawFromOrder, drawGrid };
