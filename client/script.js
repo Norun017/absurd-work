@@ -4,6 +4,7 @@ import {
   drawGrid as drawGridLines,
 } from "./renderGrid.js";
 import { setupDetector, stopWebCam } from "./blink.js";
+import { drawGridSVG, drawFromOrderSVG } from "./renderSVG.js";
 
 const log = document.querySelector(".log");
 const btn = document.querySelector("#work-btn");
@@ -18,6 +19,7 @@ const START_DATE = new Date("2026-01-16"); // Project start date
 
 // Setup Canvas
 const canvasContainer = document.querySelector("#canvas-container");
+const SVGContainer = document.querySelector("#svg-container");
 const webCam = document.querySelector("#webcam");
 const canvas = document.createElement("canvas");
 canvas.id = "canvas";
@@ -31,14 +33,15 @@ const cellSize = canvasSize / GRID_SIZE;
 
 // State
 let counter = 0n;
-let renderMode = "grid";
+let renderMode = "gridSVG";
 let inputMode = "work"; // "work" or "blink"
 
 // Pre-calculate distance orders (can be computed synchronously)
 const order = distanceOrder(GRID_SIZE, GRID_SIZE);
 
-// Not show Webcam by default
+// Not show Webcam & Canvas by default
 webCam.style.display = "none";
+canvasContainer.style.display = "none";
 
 // -----------Init----------
 
@@ -68,6 +71,22 @@ const RENDER_MODES = {
       ctx.clearRect(0, 0, canvasSize, canvasSize);
       drawFromOrderGrid(ctx, digits, order, cellSize, dpr, totalCells);
       drawGridLines(ctx, GRID_SIZE, GRID_SIZE, canvasSize, dpr, cellSize);
+    },
+  },
+
+  gridSVG: {
+    container: SVGContainer,
+    render: (counter) => {
+      SVGContainer.style.display = "flex";
+      const INTERNAL_SIZE = 480;
+      const cellSizeSVG = INTERNAL_SIZE / GRID_SIZE;
+
+      let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 ${INTERNAL_SIZE} ${INTERNAL_SIZE}" style="max-width: 480px; width: 100%;">`;
+      svg += drawFromOrderSVG(counter, order, totalCells, cellSizeSVG);
+      svg += drawGridSVG(GRID_SIZE, GRID_SIZE, cellSizeSVG);
+      svg += `</svg>`;
+
+      SVGContainer.innerHTML = svg;
     },
   },
 };
@@ -123,15 +142,6 @@ modeSelector.addEventListener("click", () => {
     webCam.style.display = "none";
     stopWebCam();
   }
-});
-
-// Render mode toggle
-const toggleInputs = document.querySelectorAll('input[name="render-mode"]');
-toggleInputs.forEach((input) => {
-  input.addEventListener("change", (e) => {
-    renderMode = e.target.value;
-    render(counter);
-  });
 });
 
 // Click button
