@@ -193,18 +193,18 @@ svg {
 
 footer {
   margin: 0.5rem;
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   color: #505050;
   position: fixed;
   bottom: 0;
   left: 0;
-  width: 35%;
+  width: 20%;
 }
 
 .footer-links {
   display: flex;
+  flex-direction: column;
   gap: 0.6rem;
-  flex-wrap: wrap;
 }
 
 footer a {
@@ -242,6 +242,60 @@ footer a {
 
 .wallet-copy:active {
   opacity: 0.6;
+}
+
+/* --------------------
+   Explore
+-------------------- */
+
+.exploreUI-wrapper {
+  grid-column: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.discover {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.discover-text {
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.explore {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.explore label {
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.explore input[type="number"] {
+  font-family: "Courier New", monospace;
+  font-size: 1rem;
+  padding: 0.3rem;
+  border: 1px solid #000;
+}
+
+.explore input[type="range"] {
+  width: 100%;
+}
+
+#counter-msg {
+  font-size: 0.8rem;
+  color: #d00;
+}
+
+#counter-msg a {
+  color: #d00;
+  text-decoration: underline;
 }
 
 /* --------------------

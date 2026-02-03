@@ -9,6 +9,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { keccak256, encodePacked } from "viem";
 import { rotateLog, writeSnapshot, getPrevSnapshotPath } from "./snapshot.js";
 import { VERSION } from "./version.js";
+import { saveDiscovery, getDiscovery, getAllDiscoveries } from "./database.js";
 
 const __dirname = import.meta.dirname;
 
@@ -18,6 +19,11 @@ const port = 3001;
 
 app.use(express.static(path.join(__dirname, "../client")));
 app.use(express.json()); // Add this for JSON body parsing
+
+// Serve explorer page at /explorer
+app.get("/explorer", (req, res) => {
+  res.sendFile(path.join(__dirname, "../client/explorer.html"));
+});
 
 const LOG_PATH = path.join(__dirname, "absurd-work.log");
 
@@ -177,6 +183,80 @@ app.get("/api/signer", (req, res) => {
   res.json({
     signer: signerAccount.address,
   });
+});
+
+// ============ DISCOVERY ENDPOINTS ============
+// Save discovery information
+app.post("/api/discovery", (req, res) => {
+  try {
+    const { tokenId, discoverer, discoveredAt, engraveMessage } = req.body;
+
+    // Validate inputs
+    if (!tokenId || !discoverer || !discoveredAt) {
+      return res.status(400).json({
+        error: "Missing required fields: tokenId, discoverer, discoveredAt",
+      });
+    }
+
+    // Validate address format
+    if (!/^0x[a-fA-F0-9]{40}$/.test(discoverer)) {
+      return res.status(400).json({
+        error: "Invalid discoverer address format",
+      });
+    }
+
+    // Save to database
+    saveDiscovery.run(
+      tokenId.toString(),
+      discoverer,
+      discoveredAt,
+      engraveMessage || null
+    );
+
+    res.json({
+      success: true,
+      tokenId: tokenId.toString(),
+    });
+  } catch (error) {
+    console.error("Error saving discovery:", error);
+    res.status(500).json({
+      error: "Failed to save discovery",
+    });
+  }
+});
+
+// Get discovery by tokenId
+app.get("/api/discovery/:tokenId", (req, res) => {
+  try {
+    const { tokenId } = req.params;
+    const discovery = getDiscovery.get(tokenId);
+
+    if (!discovery) {
+      return res.status(404).json({
+        error: "Discovery not found",
+      });
+    }
+
+    res.json(discovery);
+  } catch (error) {
+    console.error("Error getting discovery:", error);
+    res.status(500).json({
+      error: "Failed to get discovery",
+    });
+  }
+});
+
+// Get all discoveries
+app.get("/api/discoveries", (req, res) => {
+  try {
+    const discoveries = getAllDiscoveries.all();
+    res.json(discoveries);
+  } catch (error) {
+    console.error("Error getting discoveries:", error);
+    res.status(500).json({
+      error: "Failed to get discoveries",
+    });
+  }
 });
 
 // ============ SSE client management ============
