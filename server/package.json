@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "dotenv": "^17.2.3",
-    "express": "~4.16.1"
+    "express": "~4.16.1",
+    "viem": "^2.45.1"
   },
   "keywords": [],
   "author": "",

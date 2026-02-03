@@ -5,6 +5,8 @@ import express from "express";
 import fs from "fs";
 import { promises as fsPromises } from "fs";
 import path from "path";
+import { privateKeyToAccount } from "viem/accounts";
+import { keccak256, encodePacked } from "viem";
 import { rotateLog, writeSnapshot, getPrevSnapshotPath } from "./snapshot.js";
 import { VERSION } from "./version.js";
 
@@ -15,10 +17,21 @@ const hostname = "localhost";
 const port = 3001;
 
 app.use(express.static(path.join(__dirname, "../client")));
+app.use(express.json()); // Add this for JSON body parsing
 
 const LOG_PATH = path.join(__dirname, "absurd-work.log");
 
-// --- Batched write queue system ---
+// ============ SIGNATURE SETUP ============
+const SIGNER_PRIVATE_KEY = process.env.SIGNER_PRIVATE_KEY;
+if (!SIGNER_PRIVATE_KEY) {
+  console.error("Missing SIGNER_PRIVATE_KEY in .env");
+  process.exit(1);
+}
+
+const signerAccount = privateKeyToAccount(SIGNER_PRIVATE_KEY);
+console.log(`Signer Address: ${signerAccount}`);
+
+// ============ Batched write queue system ============
 let writeQueue = [];
 let isWriting = false;
 const MAX_QUEUE_SIZE = 10000; // Protect against memory overflow
@@ -51,7 +64,7 @@ async function flushQueue() {
 // Flush periodically
 setInterval(flushQueue, FLUSH_INTERVAL);
 
-// --- Rebuild counter on startup ---
+// ============ Rebuild counter on startup ============
 let counter = 0n;
 const snapshotPath = getPrevSnapshotPath();
 if (snapshotPath) {
@@ -66,7 +79,7 @@ if (fs.existsSync(LOG_PATH)) {
   counter += newCount;
 }
 
-// --- append-only click ---
+// ============ Append-only click ============
 app.post("/click", (req, res) => {
   // Check if system is overloaded
   if (writeQueue.length > MAX_QUEUE_SIZE) {
@@ -96,7 +109,77 @@ app.get("/read", (req, res) => {
   res.json({ counter: counter.toString() });
 });
 
-// --- SSE client management
+// ============ SIGNATURE ENDPOINT ============
+app.post("/api/signature", async (req, res) => {
+  try {
+    const { userAddress, tokenId } = req.body;
+
+    // Validate inputs
+    if (!userAddress || tokenId === undefined) {
+      return res.status(400).json({
+        error: "Missing userAddress or tokenId",
+      });
+    }
+
+    // Validate address format
+    if (!/^0x[a-fA-F0-9]{40}$/.test(userAddress)) {
+      return res.status(400).json({
+        error: "Invalid address format",
+      });
+    }
+
+    const tokenIdBigInt = BigInt(tokenId);
+
+    // Check if tokenId is within allowed range (Global counter)
+    if (tokenIdBigInt > counter) {
+      return res.status(403).json({
+        error: "The Image not available yet",
+      });
+    }
+    if (tokenIdBigInt < 0n) {
+      return res.status(400).json({
+        error: "Invalid tokenId",
+      });
+    }
+
+    // Create message hash (must match contract)
+    const paidOffChain = false; //Default to false, prepare for credit card pay
+    const messageHash = keccak256(
+      encodePacked(
+        ["address", "uint256", "bool"],
+        [userAddress, tokenIdBigInt, paidOffChain]
+      )
+    );
+
+    // Sign the message
+    const signature = await signerAccount.signMessage({
+      message: { raw: messageHash },
+    });
+    console.log(
+      `Signature generated for ${userAddress} - tokenId: ${tokenId} - paidOffChain: ${paidOffChain}`
+    );
+
+    res.json({
+      signature,
+      userAddress,
+      tokenId: tokenId.toString(),
+    });
+  } catch (error) {
+    console.error("Error generating signature:", error);
+    res.status(500).json({
+      error: "Failed to generate signature",
+    });
+  }
+});
+
+// Get signer address (for contract deployment)
+app.get("/api/signer", (req, res) => {
+  res.json({
+    signer: signerAccount.address,
+  });
+});
+
+// ============ SSE client management ============
 const sseClients = new Set();
 let lastBroadcastCounter = counter;
 
@@ -151,9 +234,13 @@ app.get("/events", (req, res) => {
   });
 });
 
-// Check Health
+// ============ Check Health ============
 app.get("/health", (req, res) => {
-  res.json({ ok: true, environment: process.env.NODE_ENV });
+  res.json({
+    ok: true,
+    environment: process.env.NODE_ENV,
+    signer: signerAccount.address,
+  });
 });
 
 app.listen(port, hostname, () => {
