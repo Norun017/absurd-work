@@ -10,6 +10,7 @@ const workTitle = document.querySelector("#work-title");
 const discovererEl = document.querySelector("#dicoverer");
 const discoverDateEl = document.querySelector("#discover-date");
 const engraveEl = document.querySelector("#engrave");
+const mintButton = document.querySelector("#mint");
 
 const GRID_SIZE = 16;
 const totalCells = GRID_SIZE * GRID_SIZE;
@@ -82,6 +83,44 @@ counterSlider.addEventListener("input", (e) => {
   }
 });
 
+// Listener for mint button (test function)
+mintButton.addEventListener("click", async () => {
+  try {
+    // Test data
+    const testData = {
+      tokenId: counter.toString(),
+      discoverer: "0x1234567890123456789012345678901234567890", // Test address
+      discoveredAt: new Date().toISOString(),
+      engraveMessage: "Test discovery message",
+    };
+
+    console.log("Saving discovery:", testData);
+
+    const res = await fetch("/api/discovery", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(testData),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      console.log("Discovery saved successfully:", data);
+      alert(`Discovery saved for WORK #${counter}`);
+      // Refresh discovery info
+      fetchDiscoveryInfo(counter.toString());
+    } else {
+      console.error("Failed to save discovery:", data.error);
+      alert(`Error: ${data.error}`);
+    }
+  } catch (error) {
+    console.error("Failed to save discovery:", error);
+    alert("Failed to save discovery");
+  }
+});
+
 // ========== Fetch Discovery Info ==========
 async function fetchDiscoveryInfo(tokenId) {
   try {
@@ -102,7 +141,7 @@ async function fetchDiscoveryInfo(tokenId) {
     const data = await res.json();
 
     // Display discovery information
-    discovererEl.innerHTML = `Discovered by: ${data.discoverer.substring(
+    discovererEl.innerHTML = `Discoverer: ${data.discoverer.substring(
       0,
       6
     )}...${data.discoverer.substring(38)}`;
