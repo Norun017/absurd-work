@@ -1,5 +1,19 @@
-import { distanceOrder, drawFromOrder, drawGrid } from "./renderGrid.js";
+import { distanceOrder } from "./renderGrid.js";
 import { drawGridSVG, drawFromOrderSVG } from "./renderSVG.js";
+import {
+  connectWallet,
+  getWalletAddress,
+  isWalletInstalled,
+} from "./wallet.js";
+import { CONTRACT_ADDRESS, CONTRACT_ABI } from "./contract.js";
+import {
+  createWalletClient,
+  custom,
+  encodeFunctionData,
+  createPublicClient,
+  http,
+} from "https://esm.sh/viem@2.21.54";
+import { sepolia } from "https://esm.sh/viem@2.21.54/chains";
 
 // Setup Renderer
 const SVGContainer = document.querySelector("#svg-container");
@@ -10,7 +24,9 @@ const workTitle = document.querySelector("#work-title");
 const discovererEl = document.querySelector("#dicoverer");
 const discoverDateEl = document.querySelector("#discover-date");
 const engraveEl = document.querySelector("#engrave");
+const engraveInput = document.querySelector("#engrave-input");
 const mintButton = document.querySelector("#mint");
+const mintStatus = document.querySelector("#mint-status");
 
 const GRID_SIZE = 16;
 const totalCells = GRID_SIZE * GRID_SIZE;
@@ -83,41 +99,170 @@ counterSlider.addEventListener("input", (e) => {
   }
 });
 
-// Listener for mint button (test function)
+// ========== Mint Flow ==========
 mintButton.addEventListener("click", async () => {
+  mintButton.disabled = true;
+  mintStatus.innerHTML = "";
+  mintStatus.style.color = "";
+
   try {
-    // Test data
-    const testData = {
-      tokenId: counter.toString(),
-      discoverer: "0x1234567890123456789012345678901234567890", // Test address
-      discoveredAt: new Date().toISOString(),
-      engraveMessage: "Test discovery message",
-    };
+    // Step 1: Check wallet installation
+    if (!isWalletInstalled()) {
+      throw new Error(
+        "MetaMask is not installed. Please install MetaMask to mint."
+      );
+    }
 
-    console.log("Saving discovery:", testData);
+    // Step 2: Connect wallet
+    mintStatus.innerHTML = "Connecting wallet...";
+    let userAddress = getWalletAddress(); // get address if already connected
 
-    const res = await fetch("/api/discovery", {
+    if (!userAddress) {
+      // Not currently connected
+      userAddress = await connectWallet();
+    }
+
+    console.log("Connected wallet:", userAddress);
+
+    // Step 2.5: Check network and switch if needed
+    mintStatus.innerHTML = "Checking network...";
+    const chainId = await window.ethereum.request({ method: "eth_chainId" });
+    const currentChainId = parseInt(chainId, 16);
+
+    if (currentChainId !== sepolia.id) {
+      mintStatus.innerHTML = "Please switch to Sepolia network...";
+      try {
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: `0x${sepolia.id.toString(16)}` }],
+        });
+      } catch (switchError) {
+        // This error code indicates that the chain has not been added to MetaMask
+        if (switchError.code === 4902) {
+          throw new Error(
+            "Sepolia network is not added to your wallet. Please add it manually."
+          );
+        }
+        throw switchError;
+      }
+    }
+
+    mintStatus.innerHTML = "Wallet connected. Getting signature...";
+
+    // Step 3: Request signature from backend
+    const tokenId = counter.toString();
+    const signatureRes = await fetch("/api/signature", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(testData),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userAddress,
+        tokenId,
+      }),
     });
 
-    const data = await res.json();
-
-    if (res.ok) {
-      console.log("Discovery saved successfully:", data);
-      alert(`Discovery saved for WORK #${counter}`);
-      // Refresh discovery info
-      fetchDiscoveryInfo(counter.toString());
-    } else {
-      console.error("Failed to save discovery:", data.error);
-      alert(`Error: ${data.error}`);
+    if (!signatureRes.ok) {
+      const error = await signatureRes.json();
+      throw new Error(error.error || "Failed to get signature");
     }
+
+    const { signature } = await signatureRes.json();
+    console.log("Signature received");
+
+    // Step 4: Create viem clients
+    mintStatus.innerHTML = "Preparing transaction...";
+
+    const walletClient = createWalletClient({
+      account: userAddress,
+      chain: sepolia,
+      transport: custom(window.ethereum),
+    });
+
+    const publicClient = createPublicClient({
+      chain: sepolia,
+      transport: http(),
+    });
+
+    // Step 5: Get mint price from contract
+    mintStatus.innerHTML = "Getting mint price...";
+    const mintPrice = await publicClient.readContract({
+      address: CONTRACT_ADDRESS,
+      abi: CONTRACT_ABI,
+      functionName: "mintPrice",
+    });
+
+    console.log("Mint price:", mintPrice.toString());
+
+    // Step 6: Encode function call data
+    const paidOffChain = false;
+    const data = encodeFunctionData({
+      abi: CONTRACT_ABI,
+      functionName: "safeMint",
+      args: [userAddress, BigInt(tokenId), paidOffChain, signature],
+    });
+
+    // Step 7: Send transaction
+    mintStatus.innerHTML = "Please confirm transaction in wallet...";
+    const txHash = await walletClient.sendTransaction({
+      to: CONTRACT_ADDRESS,
+      data,
+      value: mintPrice,
+    });
+
+    console.log("Transaction sent:", txHash);
+    mintStatus.innerHTML = "Transaction sent! Waiting for confirmation...";
+
+    // Step 8: Wait for transaction confirmation
+    const receipt = await publicClient.waitForTransactionReceipt({
+      hash: txHash,
+    });
+
+    if (receipt.status === "reverted") {
+      throw new Error("Transaction failed");
+    }
+
+    console.log("Transaction confirmed:", receipt);
+    mintStatus.innerHTML = "Minted! Saving to database...";
+
+    // Step 9: Save to database
+    const engraveMessage = engraveInput.value.trim();
+    const saveRes = await fetch("/api/discovery", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tokenId,
+        discoverer: userAddress,
+        discoveredAt: new Date().toISOString(),
+        engraveMessage: engraveMessage || null,
+      }),
+    });
+
+    if (!saveRes.ok) {
+      console.error("Failed to save to database, but mint succeeded");
+    }
+
+    // Step 10: Success!
+    mintStatus.innerHTML = `✓ Successfully minted WORK #${counter}!`;
+    mintStatus.style.color = "green";
+
+    // Clear input and refresh discovery info
+    engraveInput.value = "";
+    fetchDiscoveryInfo(tokenId);
   } catch (error) {
-    console.error("Failed to save discovery:", error);
-    alert("Failed to save discovery");
+    console.error("Mint error:", error);
+
+    let errorMsg = error.message;
+    if (error.code === 4001) {
+      errorMsg = "Transaction rejected by user";
+    } else if (error.message.includes("User rejected")) {
+      errorMsg = "Transaction rejected by user";
+    } else if (error.message.includes("already minted")) {
+      errorMsg = "This work has already been minted";
+    }
+
+    mintStatus.innerHTML = `✗ Error: ${errorMsg}`;
+    mintStatus.style.color = "red";
+  } finally {
+    mintButton.disabled = false;
   }
 });
 
