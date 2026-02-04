@@ -159,8 +159,7 @@ canvas {
 }
 
 svg {
-  max-width: 480px; 
-  width: 86%;
+  max-width: 410px; 
 }
 
 /* --------------------
@@ -266,12 +265,11 @@ footer a {
   margin: 0;
 }
 
-#engrave-input {
+#inscription-input {
   font-family: "Courier New", monospace;
   font-size: 0.85rem;
   padding: 0.4rem;
   border: 1px solid #000;
-  width: 100%;
   box-sizing: border-box;
 }
 
@@ -319,9 +317,6 @@ footer a {
   border: 1px solid #000;
 }
 
-.explore input[type="range"] {
-  width: 100%;
-}
 
 #counter-msg {
   font-size: 0.8rem;
@@ -331,6 +326,71 @@ footer a {
 #counter-msg a {
   color: #d00;
   text-decoration: underline;
+}
+
+/* --------------------
+   Why Discover Modal
+-------------------- */
+
+.why-discover-btn {
+  background: transparent;
+  border: none;
+  font-family: "Courier New", monospace;
+  font-size: 0.85rem;
+  color: #505050;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 0.3rem;
+}
+
+.why-discover-btn:hover {
+  color: #000;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
+}
+
+.modal-content {
+  background-color: white;
+  margin: 7% auto;
+  padding: 2rem;
+  width: 90%;
+  max-width: 600px;
+  position: relative;
+}
+
+.modal-content ol {
+  font-size: 0.9rem;
+  padding-left: 1.5rem;
+}
+
+.modal-content li {
+  margin: 0.3rem 0;
+}
+
+.modal-close {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #505050;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: #000;
 }
 
 /* --------------------

@@ -12,8 +12,8 @@ import {
   encodeFunctionData,
   createPublicClient,
   http,
-} from "https://esm.sh/viem@2.21.54";
-import { sepolia } from "https://esm.sh/viem@2.21.54/chains";
+} from "https://esm.sh/viem@2.45.1";
+import { sepolia } from "https://esm.sh/viem@2.45.1/chains";
 
 // Setup Renderer
 const SVGContainer = document.querySelector("#svg-container");
@@ -23,16 +23,23 @@ const counterMsg = document.querySelector("#counter-msg");
 const workTitle = document.querySelector("#work-title");
 const discovererEl = document.querySelector("#dicoverer");
 const discoverDateEl = document.querySelector("#discover-date");
-const engraveEl = document.querySelector("#engrave");
-const engraveInput = document.querySelector("#engrave-input");
+const inscriptionEl = document.querySelector("#inscription");
+const inscriptionInput = document.querySelector("#inscription-input");
 const mintButton = document.querySelector("#mint");
 const mintStatus = document.querySelector("#mint-status");
+const whyDiscoverBtn = document.querySelector("#why-discover");
+const whyDiscoverModal = document.querySelector("#why-discover-modal");
+const modalClose = document.querySelector(".modal-close");
 
 const GRID_SIZE = 16;
 const totalCells = GRID_SIZE * GRID_SIZE;
 const order = distanceOrder(GRID_SIZE, GRID_SIZE);
 let GLOBAL_COUNTER;
 let counter = 0n;
+
+// Cache to avoid repeated calls
+const ensCache = new Map();
+const ownerCache = new Map();
 
 // ========== Init ==========
 async function init() {
@@ -96,6 +103,24 @@ counterSlider.addEventListener("input", (e) => {
     workTitle.innerHTML = `WORK #${counter}`;
   } catch (error) {
     console.error("Invalid counter value:", error);
+  }
+});
+
+// ========== Why Discover Modal ==========
+// Open modal
+whyDiscoverBtn.addEventListener("click", () => {
+  whyDiscoverModal.style.display = "block";
+});
+
+// Close modal when clicking X
+modalClose.addEventListener("click", () => {
+  whyDiscoverModal.style.display = "none";
+});
+
+// Close modal when clicking outside of it
+window.addEventListener("click", (e) => {
+  if (e.target === whyDiscoverModal) {
+    whyDiscoverModal.style.display = "none";
   }
 });
 
@@ -224,7 +249,7 @@ mintButton.addEventListener("click", async () => {
     mintStatus.innerHTML = "Minted! Saving to database...";
 
     // Step 9: Save to database
-    const engraveMessage = engraveInput.value.trim();
+    const inscriptionMessage = inscriptionInput.value.trim();
     const saveRes = await fetch("/api/discovery", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -232,7 +257,7 @@ mintButton.addEventListener("click", async () => {
         tokenId,
         discoverer: userAddress,
         discoveredAt: new Date().toISOString(),
-        engraveMessage: engraveMessage || null,
+        inscriptionMessage: inscriptionMessage || null,
       }),
     });
 
@@ -245,7 +270,7 @@ mintButton.addEventListener("click", async () => {
     mintStatus.style.color = "green";
 
     // Clear input and refresh discovery info
-    engraveInput.value = "";
+    inscriptionInput.value = "";
     fetchDiscoveryInfo(tokenId);
   } catch (error) {
     console.error("Mint error:", error);
@@ -271,36 +296,111 @@ async function fetchDiscoveryInfo(tokenId) {
   try {
     const res = await fetch(`/api/discovery/${tokenId}`, { method: "GET" });
 
-    if (res.status === 404) {
-      // No discovery found for this tokenId
-      discovererEl.innerHTML = "Discoverer: Not yet discovered";
-      discoverDateEl.innerHTML = "Discovered Date: -";
-      engraveEl.innerHTML = "Engrave: -";
-      return;
-    }
-
     if (!res.ok) {
       throw new Error("Failed to fetch discovery");
     }
 
     const data = await res.json();
 
+    // Check if token has been minted
+    if (!data.minted) {
+      discovererEl.innerHTML = "Discoverer: Not yet discovered";
+      discoverDateEl.innerHTML = "Discovered Date: -";
+      inscriptionEl.innerHTML = "Inscription: -";
+      return;
+    }
+
     // Display discovery information
-    discovererEl.innerHTML = `Discoverer: ${data.discoverer.substring(
-      0,
-      6
-    )}...${data.discoverer.substring(38)}`;
+    let displayAddress = data.discoverer;
+    let ownerLabel = "Discoverer";
+    let ensName;
+
+    // If the discoverer already mint with address
+    if (/^0x[a-fA-F0-9]{40}$/.test(data.discoverer)) {
+      // Check if token ownership has changed
+      try {
+        const publicClient = createPublicClient({
+          chain: sepolia,
+          transport: http(),
+        });
+
+        // Try to get current owner (may fail if token hasn't been minted yet)
+        // Check cache first
+        if (ownerCache.has(tokenId)) {
+          const cachedOwner = ownerCache.get(tokenId);
+          if (
+            cachedOwner &&
+            cachedOwner.toLowerCase() !== data.discoverer.toLowerCase()
+          ) {
+            displayAddress = cachedOwner;
+            ownerLabel = "Current owner";
+          }
+        } else {
+          try {
+            const currentOwner = await publicClient.readContract({
+              address: CONTRACT_ADDRESS,
+              abi: CONTRACT_ABI,
+              functionName: "ownerOf",
+              args: [BigInt(tokenId)],
+            });
+
+            // Cache the owner
+            ownerCache.set(tokenId, currentOwner);
+
+            // If owner has changed, show current owner instead
+            if (currentOwner.toLowerCase() !== data.discoverer.toLowerCase()) {
+              displayAddress = currentOwner;
+              ownerLabel = "Current owner";
+            }
+          } catch (ownerError) {
+            // Token hasn't been minted yet - cache null to avoid retrying
+            ownerCache.set(tokenId, null);
+            console.log("Token not yet minted on-chain:", tokenId);
+          }
+        }
+
+        // Try to get ENS name for the address (with caching)
+        const addressLower = displayAddress.toLowerCase();
+        if (ensCache.has(addressLower)) {
+          ensName = ensCache.get(addressLower);
+        } else {
+          try {
+            ensName = await publicClient.getEnsName({
+              address: displayAddress,
+            });
+            // Cache the result (including null/undefined for addresses without ENS)
+            ensCache.set(addressLower, ensName);
+          } catch (ensError) {
+            // ENS lookup failed, cache the failure to avoid retrying
+            ensCache.set(addressLower, null);
+            console.log("ENS lookup failed:", ensError);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to check ownership:", error);
+      }
+      discovererEl.innerHTML = ensName
+        ? `${ownerLabel}: ${ensName}`
+        : `${ownerLabel}: ${displayAddress.substring(
+            0,
+            6
+          )}...${displayAddress.substring(38)}`;
+    } else {
+      // Display plain name if owner is not an address
+      discovererEl.innerHTML = `${ownerLabel}: ${data.discoverer}`;
+    }
+
     discoverDateEl.innerHTML = `Discovered Date: ${new Date(
       data.discovered_at
     ).toLocaleDateString()}`;
-    engraveEl.innerHTML = data.engrave_message
-      ? `Engrave: "${data.engrave_message}"`
-      : "Engrave: -";
+    inscriptionEl.innerHTML = data.inscription_message
+      ? `Inscription: "${data.inscription_message}"`
+      : "Inscription: -";
   } catch (error) {
     console.error("Failed to fetch discovery info:", error);
     discovererEl.innerHTML = "Discoverer: Error loading";
     discoverDateEl.innerHTML = "Discovered Date: -";
-    engraveEl.innerHTML = "Engrave: -";
+    inscriptionEl.innerHTML = "Inscription: -";
   }
 }
 
@@ -308,7 +408,7 @@ async function fetchDiscoveryInfo(tokenId) {
 function renderImage(counter) {
   const cellSizeSVG = 480 / GRID_SIZE;
 
-  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 480 480">`;
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 480 480" shape-rendering="crispEdges">`;
   svg += drawGridSVG(GRID_SIZE, GRID_SIZE, cellSizeSVG);
   svg += drawFromOrderSVG(counter, order, totalCells, cellSizeSVG);
   svg += `</svg>`;

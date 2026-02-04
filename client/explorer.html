@@ -24,15 +24,18 @@
           <div class="discover">
             <p id="dicoverer" class="discover-text">Discoverer: ...</p>
             <p id="discover-date" class="discover-text">Date: ...</p>
-            <p id="engrave" class="discover-text">Message: ...</p>
-            <input
-              id="engrave-input"
-              type="text"
-              placeholder="Your engrave message (optional)"
-              maxlength="100"
-            />
+            <p id="inscription" class="discover-text">Inscription: ...</p>
             <button id="mint">Mint</button>
+            <input
+              id="inscription-input"
+              type="text"
+              placeholder="Add inscription (optional)"
+              maxlength="120"
+            />
             <p id="mint-status" class="mint-status"></p>
+            <button id="why-discover" class="why-discover-btn">
+              What is Discoverer?
+            </button>
           </div>
           <div class="explore">
             <label for="counter">Work</label> <br />
@@ -78,5 +81,39 @@
         </div>
       </details>
     </footer>
+
+    <!-- Why Discover Modal -->
+    <div id="why-discover-modal" class="modal">
+      <div class="modal-content">
+        <span class="modal-close">&times;</span>
+        <h2>What is Discover?</h2>
+        <p>
+          For explorers who find a grid pattern that feels meaningful, you have
+          the opportunity to mint that pattern as an NFT and become its
+          <b>Discoverer</b>. During the minting process, you may include an
+          inscription that will be permanently displayed alongside the work.
+          <i>Each pattern can have only one Discoverer</i>.
+        </p>
+        <h3>A Note from Norun</h3>
+        <p>
+          You are always welcome to freely explore past patterns and participate
+          in The Absurd Work project. I added the minting feature as a way for
+          collectors to become patrons and help me keep this project going. I
+          really appreciate all the support that helps this project continue.
+        </p>
+        <h3>The Discovery & NFT Process</h3>
+        <ol>
+          <li>
+            Once a message is inscribed during the minting process, it cannot be
+            edited or changed
+          </li>
+          <li>
+            This NFT collection includes a 5% royalty on all secondary sales.
+            These proceeds go directly to the original creator, Norun, to
+            support ongoing work.
+          </li>
+        </ol>
+      </div>
+    </div>
   </body>
 </html>

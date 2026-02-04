@@ -13,7 +13,7 @@ db.exec(`
     token_id TEXT PRIMARY KEY,
     discoverer TEXT NOT NULL,
     discovered_at TEXT NOT NULL,
-    engrave_message TEXT,
+    inscription_message TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 `);
@@ -22,18 +22,18 @@ console.log("Database initialized at:", DB_PATH);
 
 // Prepared statements
 const saveDiscovery = db.prepare(`
-  INSERT OR REPLACE INTO discoveries (token_id, discoverer, discovered_at, engrave_message)
+  INSERT OR REPLACE INTO discoveries (token_id, discoverer, discovered_at, inscription_message)
   VALUES (?, ?, ?, ?)
 `);
 
 const getDiscovery = db.prepare(`
-  SELECT token_id, discoverer, discovered_at, engrave_message, created_at
+  SELECT token_id, discoverer, discovered_at, inscription_message, created_at
   FROM discoveries
   WHERE token_id = ?
 `);
 
 const getAllDiscoveries = db.prepare(`
-  SELECT token_id, discoverer, discovered_at, engrave_message, created_at
+  SELECT token_id, discoverer, discovered_at, inscription_message, created_at
   FROM discoveries
   ORDER BY created_at DESC
 `);

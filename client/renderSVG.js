@@ -17,7 +17,7 @@ function drawFromOrderSVG(counter, order, totalCells, cellSize) {
     if (digits[i] === "1") {
       const x = order[i].x * cellSize;
       const y = order[i].y * cellSize;
-      svg += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="#000" shape-rendering="crispEdges" />`;
+      svg += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="#000" />`;
     }
   }
 

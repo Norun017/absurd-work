@@ -189,7 +189,7 @@ app.get("/api/signer", (req, res) => {
 // Save discovery information
 app.post("/api/discovery", (req, res) => {
   try {
-    const { tokenId, discoverer, discoveredAt, engraveMessage } = req.body;
+    const { tokenId, discoverer, discoveredAt, inscriptionMessage } = req.body;
 
     // Validate inputs
     if (!tokenId || !discoverer || !discoveredAt) {
@@ -210,7 +210,7 @@ app.post("/api/discovery", (req, res) => {
       tokenId.toString(),
       discoverer,
       discoveredAt,
-      engraveMessage || null
+      inscriptionMessage || null
     );
 
     res.json({
@@ -232,12 +232,16 @@ app.get("/api/discovery/:tokenId", (req, res) => {
     const discovery = getDiscovery.get(tokenId);
 
     if (!discovery) {
-      return res.status(404).json({
-        error: "Discovery not found",
+      return res.status(200).json({
+        minted: false,
+        tokenId,
       });
     }
 
-    res.json(discovery);
+    res.json({
+      minted: true,
+      ...discovery,
+    });
   } catch (error) {
     console.error("Error getting discovery:", error);
     res.status(500).json({
