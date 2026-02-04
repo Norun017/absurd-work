@@ -8,12 +8,16 @@
     <script src="./explorer.js" type="module"></script>
     <title>Explorer - The Absurd Work</title>
   </head>
-  <body>
+  <body class="explorer-page">
     <div class="header">
-      <h1>Explorer</h1>
+      <h1>Explore The Past Images</h1>
     </div>
     <div class="main-wrapper">
-      <p class="desc-top">Explore all 2<sup>256</sup> possibilities</p>
+      <p class="desc-top">
+        The Absurd Work has now reached
+        <span id="sub-counter"></span> works.<br />
+        Let’s explore all the images shown so far.
+      </p>
       <div class="render-webcam-wrapper">
         <div class="render-containers">
           <div id="svg-container" class="canvas-container"></div>
@@ -21,27 +25,32 @@
 
         <div class="exploreUI-wrapper">
           <p id="work-title" class="log">0</p>
-          <div class="discover">
-            <p id="dicoverer" class="discover-text">Discoverer: ...</p>
-            <p id="discover-date" class="discover-text">Date: ...</p>
-            <p id="inscription" class="discover-text">Inscription: ...</p>
-            <button id="mint">Mint</button>
-            <input
-              id="inscription-input"
-              type="text"
-              placeholder="Add inscription (optional)"
-              maxlength="120"
-            />
-            <p id="mint-status" class="mint-status"></p>
-            <button id="why-discover" class="why-discover-btn">
-              What is Discoverer?
-            </button>
-          </div>
           <div class="explore">
-            <label for="counter">Work</label> <br />
+            <label for="counter">Enter a counter or slide to explore.</label>
             <input id="counter" type="number" min="0" value="0" />
             <input id="counter-slider" type="range" min="0" max="0" value="0" />
+            <button id="counter-random">Random Counter!</button>
             <p id="counter-msg"></p>
+          </div>
+          <div class="discover">
+            <p id="dicoverer" class="discover-text">Discoverer: ...</p>
+            <p id="discover-date" class="discover-text">Discovered Date: ...</p>
+            <p id="inscription" class="discover-text">
+              <i>Inscription: ...</i>
+            </p>
+            <details>
+              <summary>Collect</summary>
+              <textarea
+                id="inscription-input"
+                placeholder="Add inscription (optional)"
+                maxlength="120"
+              ></textarea>
+              <button id="mint">Connect to collect (0.01 ETH)</button>
+              <p id="mint-status" class="mint-status"></p>
+            </details>
+            <button id="why-discover" class="why-discover-btn">
+              What is Collect?
+            </button>
           </div>
         </div>
       </div>
@@ -86,27 +95,24 @@
     <div id="why-discover-modal" class="modal">
       <div class="modal-content">
         <span class="modal-close">&times;</span>
-        <h2>What is Discover?</h2>
+        <h2>What is Collect?</h2>
         <p>
           For explorers who find a grid pattern that feels meaningful, you have
-          the opportunity to mint that pattern as an NFT and become its
-          <b>Discoverer</b>. During the minting process, you may include an
-          inscription that will be permanently displayed alongside the work.
+          the opportunity to collect that pattern as an NFT and become its
+          <b>Discoverer</b>. During the process, you may include an inscription
+          that will be permanently displayed alongside the work.
           <i>Each pattern can have only one Discoverer</i>.
         </p>
         <h3>A Note from Norun</h3>
         <p>
           You are always welcome to freely explore past patterns and participate
-          in The Absurd Work project. I added the minting feature as a way for
+          in The Absurd Work project. I added the collect feature as a way for
           collectors to become patrons and help me keep this project going. I
           really appreciate all the support that helps this project continue.
         </p>
         <h3>The Discovery & NFT Process</h3>
         <ol>
-          <li>
-            Once a message is inscribed during the minting process, it cannot be
-            edited or changed
-          </li>
+          <li>Once a message is inscribed, it cannot be edited or changed</li>
           <li>
             This NFT collection includes a 5% royalty on all secondary sales.
             These proceeds go directly to the original creator, Norun, to

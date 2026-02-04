@@ -17,8 +17,10 @@ import { sepolia } from "https://esm.sh/viem@2.45.1/chains";
 
 // Setup Renderer
 const SVGContainer = document.querySelector("#svg-container");
+const subCounter = document.querySelector("#sub-counter");
 const counterInput = document.querySelector("#counter");
 const counterSlider = document.querySelector("#counter-slider");
+const counterRandom = document.querySelector("#counter-random");
 const counterMsg = document.querySelector("#counter-msg");
 const workTitle = document.querySelector("#work-title");
 const discovererEl = document.querySelector("#dicoverer");
@@ -47,6 +49,8 @@ async function init() {
     const res = await fetch(`/read`, { method: "GET" });
     const data = await res.json();
     GLOBAL_COUNTER = BigInt(data.counter);
+    subCounter.innerHTML = `<u>${GLOBAL_COUNTER}</u>`; // update subtitle counter
+    counter = randomBigInt(GLOBAL_COUNTER); // Show random counter at start
 
     // Set slider max value
     counterSlider.max = GLOBAL_COUNTER.toString();
@@ -55,8 +59,7 @@ async function init() {
     // Set input number value
     counterInput.value = counter.toString();
 
-    renderImage(counter);
-    workTitle.innerHTML = `WORK #${counter}`;
+    render(counter);
   } catch (error) {
     console.error("Failed to initialize:", error);
   }
@@ -67,43 +70,35 @@ init();
 // ========== Event Listeners ==========
 // Listener for input number
 counterInput.addEventListener("input", (e) => {
-  try {
-    const value = e.target.value;
-    if (value === "") return;
+  const value = e.target.value;
+  if (value === "") return;
 
-    // Prevent negative numbers
-    if (value < 0) {
-      counterInput.value = 0;
-      return;
-    }
+  // Prevent negative numbers
+  if (value < 0) {
+    counterInput.value = 0;
+    return;
+  }
 
-    if (value > GLOBAL_COUNTER) {
-      counterMsg.innerHTML =
-        'Cannot explore future works. <a href="/">Back to work.</a>';
-    } else {
-      counterMsg.innerHTML = "";
-      counter = BigInt(value);
-      counterSlider.value = value; // Sync slider
-      renderImage(counter);
-      workTitle.innerHTML = `WORK #${counter}`;
-    }
-  } catch (error) {
-    console.error("Invalid counter value:", error);
+  if (value > GLOBAL_COUNTER) {
+    counterMsg.innerHTML =
+      'Cannot explore future works. <a href="/">Back to work.</a>';
+  } else {
+    counter = BigInt(value);
+    render(counter);
   }
 });
 
 // Listener for input slider
 counterSlider.addEventListener("input", (e) => {
-  try {
-    const value = e.target.value;
-    counter = BigInt(value);
-    counterInput.value = value; // Sync number input
-    counterMsg.innerHTML = "";
-    renderImage(counter);
-    workTitle.innerHTML = `WORK #${counter}`;
-  } catch (error) {
-    console.error("Invalid counter value:", error);
-  }
+  const value = e.target.value;
+  counter = BigInt(value);
+  render(counter);
+});
+
+// Listener for random counter
+counterRandom.addEventListener("click", () => {
+  counter = randomBigInt(GLOBAL_COUNTER);
+  render(counter);
 });
 
 // ========== Why Discover Modal ==========
@@ -304,12 +299,20 @@ async function fetchDiscoveryInfo(tokenId) {
 
     // Check if token has been minted
     if (!data.minted) {
+      // Token has not been minted
       discovererEl.innerHTML = "Discoverer: Not yet discovered";
       discoverDateEl.innerHTML = "Discovered Date: -";
-      inscriptionEl.innerHTML = "Inscription: -";
+      inscriptionEl.innerHTML = `<i>Inscription: -</i>`;
+      //Enable minting
+      mintButton.disabled = false;
+      mintButton.textContent = "Connect to collect (0.01 ETH)";
       return;
     }
 
+    // Token has been minted
+    // Disable minting
+    mintButton.disabled = true;
+    mintButton.textContent = "Already discovered";
     // Display discovery information
     let displayAddress = data.discoverer;
     let ownerLabel = "Discoverer";
@@ -394,18 +397,18 @@ async function fetchDiscoveryInfo(tokenId) {
       data.discovered_at
     ).toLocaleDateString()}`;
     inscriptionEl.innerHTML = data.inscription_message
-      ? `Inscription: "${data.inscription_message}"`
-      : "Inscription: -";
+      ? `<i>Inscription: "${data.inscription_message}"</i>`
+      : `<i>Inscription: -</i>`;
   } catch (error) {
     console.error("Failed to fetch discovery info:", error);
     discovererEl.innerHTML = "Discoverer: Error loading";
     discoverDateEl.innerHTML = "Discovered Date: -";
-    inscriptionEl.innerHTML = "Inscription: -";
+    inscriptionEl.innerHTML = `<i>Inscription: -</i>`;
   }
 }
 
 // ========== Render ==========
-function renderImage(counter) {
+function render(counter) {
   const cellSizeSVG = 480 / GRID_SIZE;
 
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 480 480" shape-rendering="crispEdges">`;
@@ -419,5 +422,30 @@ function renderImage(counter) {
   // Fetch and display discovery info
   fetchDiscoveryInfo(counter.toString());
 
+  // Update UI counter
+  counterSlider.value = counter; // Sync slider
+  counterInput.value = counter; // Sync number input
+  counterMsg.innerHTML = "";
+  workTitle.innerHTML = `WORK #${counter}`;
+
   return svg;
+}
+
+// ========== Utils ==========
+function randomBigInt(max) {
+  // Generate random BigInt between 1 and GLOBAL_COUNTER by creating random bytes
+  const maxHex = max.toString(16);
+  const numDigits = maxHex.length;
+
+  let randomBigInt;
+  do {
+    // Generate random hex string of the same length
+    const hexString = Array(numDigits)
+      .fill()
+      .map(() => Math.floor(Math.random() * 16).toString(16))
+      .join("");
+
+    randomBigInt = BigInt(`0x${hexString}`);
+  } while (randomBigInt > max || randomBigInt === 0n);
+  return randomBigInt;
 }
