@@ -41,7 +41,7 @@ let counter = 0n;
 
 // Cache to avoid repeated calls
 const ensCache = new Map();
-const ownerCache = new Map();
+const currentOwnerCache = new Map();
 
 // ========== Init ==========
 async function init() {
@@ -129,7 +129,7 @@ mintButton.addEventListener("click", async () => {
     // Step 1: Check wallet installation
     if (!isWalletInstalled()) {
       throw new Error(
-        "MetaMask is not installed. Please install MetaMask to mint."
+        "MetaMask is not installed. Please install MetaMask to mint.",
       );
     }
 
@@ -160,7 +160,7 @@ mintButton.addEventListener("click", async () => {
         // This error code indicates that the chain has not been added to MetaMask
         if (switchError.code === 4902) {
           throw new Error(
-            "Sepolia network is not added to your wallet. Please add it manually."
+            "Sepolia network is not added to your wallet. Please add it manually.",
           );
         }
         throw switchError;
@@ -288,6 +288,85 @@ mintButton.addEventListener("click", async () => {
 
 // ========== Fetch Discovery Info ==========
 async function fetchDiscoveryInfo(tokenId) {
+  const res = await fetch(`/api/discovery/${tokenId}`, { method: "GET" });
+
+  //Failed to fetch from server database: Display and return
+  if (!res.ok) {
+    console.error("Failed to fetch discovery info");
+    discovererEl.innerHTML = "Discoverer: Error loading";
+    discoverDateEl.innerHTML = "Discovered Date: -";
+    inscriptionEl.innerHTML = `<i>Inscription: -</i>`;
+    return;
+  }
+
+  const data = await res.json();
+  const originalOwner = data.discoverer;
+
+  // If token has not been minted: Display and return
+  if (!data.minted) {
+    discovererEl.innerHTML = "Discoverer: Not yet discovered";
+    discoverDateEl.innerHTML = "Discovered Date: -";
+    inscriptionEl.innerHTML = `<i>Inscription: -</i>`;
+    //Enable minting
+    mintButton.disabled = false;
+    mintButton.textContent = "Connect to collect (0.01 ETH)";
+    return;
+  }
+
+  // If Reserved by paid offchain (plain name): Display and return
+  if (!/^0x[a-fA-F0-9]{40}$/.test(originalOwner)) {
+    discovererEl.innerHTML = `${ownerLabel}: ${data.discoverer}`;
+    discoverDateEl.innerHTML = `Discovered Date: ${new Date(
+      data.discovered_at,
+    ).toLocaleDateString()}`;
+    inscriptionEl.innerHTML = data.inscription_message
+      ? `<i>Inscription: "${data.inscription_message}"</i>`
+      : `<i>Inscription: -</i>`;
+    return;
+  }
+
+  // Continue if owner is valid address
+  // Token has been minted - disable minting
+  mintButton.disabled = true;
+  mintButton.textContent = "Already discovered";
+  discovererEl.innerHTML = "Discoverer: Loading...";
+
+  let changeHand = false;
+
+  // Get current owner and check it the token has changed hand
+  const currentOwner = await currentOwnerCheckAndCache(tokenId);
+  if (currentOwner.toLowerCase() !== originalOwner.toLowerCase()) {
+    changeHand = true;
+  }
+
+  // Get ENS name (for both original and current owner)
+  const originalENSName = await ensNameCheckAndCache(originalOwner);
+  let currentENSName;
+  if (changeHand) {
+    currentENSName = await ensNameCheckAndCache(currentOwner);
+  }
+
+  // Display original discoverer
+  discovererEl.innerHTML = `Discoverer: ${
+    originalENSName ? originalENSName : originalOwner.substring(0, 6)
+  }...${originalOwner.substring(38)}`;
+  // Display current owner after (if change hand)
+  if (changeHand) {
+    discovererEl.innerHTML += `</br>(Current Owner: ${
+      currentENSName ? currentENSName : currentOwner.substring(0, 6)
+    }...${currentOwner.substring(38)})`;
+  }
+
+  discoverDateEl.innerHTML = `Discovered Date: ${new Date(
+    data.discovered_at,
+  ).toLocaleDateString()}`;
+
+  inscriptionEl.innerHTML = data.inscription_message
+    ? `<i>Inscription: "${data.inscription_message}"</i>`
+    : `<i>Inscription: -</i>`;
+}
+
+async function backup(tokenId) {
   try {
     const res = await fetch(`/api/discovery/${tokenId}`, { method: "GET" });
 
@@ -310,9 +389,11 @@ async function fetchDiscoveryInfo(tokenId) {
     }
 
     // Token has been minted
+
     // Disable minting
     mintButton.disabled = true;
     mintButton.textContent = "Already discovered";
+
     // Display discovery information
     let displayAddress = data.discoverer;
     let ownerLabel = "Discoverer";
@@ -321,72 +402,62 @@ async function fetchDiscoveryInfo(tokenId) {
     // If the discoverer already mint with address
     if (/^0x[a-fA-F0-9]{40}$/.test(data.discoverer)) {
       // Check if token ownership has changed
-      try {
-        const publicClient = createPublicClient({
-          chain: sepolia,
-          transport: http(),
+      const publicClient = createPublicClient({
+        chain: sepolia,
+        transport: http(),
+      });
+
+      // If cached
+      if (currentOwnerCache.has(tokenId)) {
+        const currentOwner = currentOwnerCache.get(tokenId);
+        if (
+          // If current owner != original discoverer
+          currentOwner.toLowerCase() !== data.discoverer.toLowerCase()
+        ) {
+          displayAddress = currentOwner;
+          ownerLabel = "Current owner";
+        }
+      } else {
+        // Try to get current owner
+        const currentOwner = await publicClient.readContract({
+          address: CONTRACT_ADDRESS,
+          abi: CONTRACT_ABI,
+          functionName: "ownerOf",
+          args: [BigInt(tokenId)],
         });
-
-        // Try to get current owner (may fail if token hasn't been minted yet)
-        // Check cache first
-        if (ownerCache.has(tokenId)) {
-          const cachedOwner = ownerCache.get(tokenId);
-          if (
-            cachedOwner &&
-            cachedOwner.toLowerCase() !== data.discoverer.toLowerCase()
-          ) {
-            displayAddress = cachedOwner;
-            ownerLabel = "Current owner";
-          }
-        } else {
-          try {
-            const currentOwner = await publicClient.readContract({
-              address: CONTRACT_ADDRESS,
-              abi: CONTRACT_ABI,
-              functionName: "ownerOf",
-              args: [BigInt(tokenId)],
-            });
-
-            // Cache the owner
-            ownerCache.set(tokenId, currentOwner);
-
-            // If owner has changed, show current owner instead
-            if (currentOwner.toLowerCase() !== data.discoverer.toLowerCase()) {
-              displayAddress = currentOwner;
-              ownerLabel = "Current owner";
-            }
-          } catch (ownerError) {
-            // Token hasn't been minted yet - cache null to avoid retrying
-            ownerCache.set(tokenId, null);
-            console.log("Token not yet minted on-chain:", tokenId);
-          }
+        // Then cache the owner
+        currentOwnerCache.set(tokenId, currentOwner);
+        // If owner has changed, show current owner instead
+        if (currentOwner.toLowerCase() !== data.discoverer.toLowerCase()) {
+          displayAddress = currentOwner;
+          ownerLabel = "Current owner";
         }
-
-        // Try to get ENS name for the address (with caching)
-        const addressLower = displayAddress.toLowerCase();
-        if (ensCache.has(addressLower)) {
-          ensName = ensCache.get(addressLower);
-        } else {
-          try {
-            ensName = await publicClient.getEnsName({
-              address: displayAddress,
-            });
-            // Cache the result (including null/undefined for addresses without ENS)
-            ensCache.set(addressLower, ensName);
-          } catch (ensError) {
-            // ENS lookup failed, cache the failure to avoid retrying
-            ensCache.set(addressLower, null);
-            console.log("ENS lookup failed:", ensError);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to check ownership:", error);
       }
+
+      // Try to get ENS name for the address (with caching)
+      const addressLower = displayAddress.toLowerCase();
+      if (ensCache.has(addressLower)) {
+        ensName = ensCache.get(addressLower);
+      } else {
+        try {
+          ensName = await publicClient.getEnsName({
+            address: displayAddress,
+          });
+          // Cache the result (including null/undefined for addresses without ENS)
+          ensCache.set(addressLower, ensName);
+        } catch (ensError) {
+          // ENS lookup failed, cache the failure to avoid retrying
+          ensCache.set(addressLower, null);
+          console.log("ENS lookup failed:", ensError);
+        }
+      }
+
+      // Display Current Owner name
       discovererEl.innerHTML = ensName
         ? `${ownerLabel}: ${ensName}`
         : `${ownerLabel}: ${displayAddress.substring(
             0,
-            6
+            6,
           )}...${displayAddress.substring(38)}`;
     } else {
       // Display plain name if owner is not an address
@@ -394,7 +465,7 @@ async function fetchDiscoveryInfo(tokenId) {
     }
 
     discoverDateEl.innerHTML = `Discovered Date: ${new Date(
-      data.discovered_at
+      data.discovered_at,
     ).toLocaleDateString()}`;
     inscriptionEl.innerHTML = data.inscription_message
       ? `<i>Inscription: "${data.inscription_message}"</i>`
@@ -448,4 +519,65 @@ function randomBigInt(max) {
     randomBigInt = BigInt(`0x${hexString}`);
   } while (randomBigInt > max || randomBigInt === 0n);
   return randomBigInt;
+}
+
+async function currentOwnerCheckAndCache(tokenId) {
+  let currentOwner;
+
+  // If has current owner cache => return current owner
+  if (currentOwnerCache.has(tokenId)) {
+    currentOwner = currentOwnerCache.get(tokenId);
+    return currentOwner;
+  }
+
+  // Try to get current owner
+  try {
+    const publicClient = createPublicClient({
+      chain: sepolia,
+      transport: http(),
+    });
+    currentOwner = await publicClient.readContract({
+      address: CONTRACT_ADDRESS,
+      abi: CONTRACT_ABI,
+      functionName: "ownerOf",
+      args: [BigInt(tokenId)],
+    });
+    // Then cache the owner
+    currentOwnerCache.set(tokenId, currentOwner);
+    return currentOwner;
+  } catch (error) {
+    // Token may not exist yet (not minted) or network error
+    console.error("Failed to fetch current owner:", error);
+    return null;
+  }
+}
+
+async function ensNameCheckAndCache(address) {
+  let ensName;
+
+  // If has ENS name cached >> return cache
+  const addressLower = address.toLowerCase();
+  if (ensCache.has(addressLower)) {
+    ensName = ensCache.get(addressLower);
+    return ensName;
+  }
+
+  // Try get ENS name
+  try {
+    const publicClient = createPublicClient({
+      chain: sepolia,
+      transport: http(),
+    });
+    ensName = await publicClient.getEnsName({
+      address: address,
+    });
+    // Cache the result (including null/undefined for addresses without ENS)
+    ensCache.set(addressLower, ensName);
+    return ensName;
+  } catch (ensError) {
+    // ENS lookup failed, cache the failure to avoid retrying
+    ensCache.set(addressLower, null);
+    console.log("ENS lookup failed:", ensError);
+    return null;
+  }
 }

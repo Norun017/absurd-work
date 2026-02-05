@@ -143,6 +143,10 @@ p {
   text-align: center;
 }
 
+#inscription {
+  color: #707070;
+}
+
 /* --------------------
    Canvas
 -------------------- */
@@ -200,7 +204,7 @@ footer {
   position: fixed;
   bottom: 0;
   left: 0;
-  width: 100%;
+  width: 25%;
 }
 
 .footer-links {
@@ -508,6 +512,10 @@ footer a {
     aspect-ratio: 1 / 1;
   }
 
+  footer {
+    width: 100%;
+  }
+
   .footer-links {
     flex-direction: row;
     gap: 0.6rem;
@@ -516,9 +524,7 @@ footer a {
   body {
     padding-bottom: 3rem;
   }
-}
 
-@media (max-width: 600px) {
   h1 {
     font-size: 2.5rem;
   }
@@ -527,3 +533,4 @@ footer a {
     font-size: 2.5rem;
   }
 }
+
