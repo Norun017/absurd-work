@@ -42,6 +42,12 @@ let counter = 0n;
 const ensCache = new Map();
 const currentOwnerCache = new Map();
 
+// Shared public client for RPC calls
+const publicClient = createPublicClient({
+  chain: sepolia,
+  transport: http(),
+});
+
 // ========== Init ==========
 async function init() {
   try {
@@ -197,11 +203,6 @@ mintButton.addEventListener("click", async () => {
       transport: custom(window.ethereum),
     });
 
-    const publicClient = createPublicClient({
-      chain: sepolia,
-      transport: http(),
-    });
-
     // Step 5: Get mint price from contract
     mintStatus.innerHTML = "Getting mint price...";
     const mintPrice = await publicClient.readContract({
@@ -332,18 +333,21 @@ async function fetchDiscoveryInfo(tokenId) {
   mintButton.textContent = "Already discovered";
   discovererEl.innerHTML = "Discoverer: Loading...";
 
+  // Fetch current owner and original ENS name in parallel
+  const [currentOwner, originalENSName] = await Promise.all([
+    currentOwnerCheckAndCache(tokenId),
+    ensNameCheckAndCache(originalOwner),
+  ]);
+
+  // Check if token has changed hands
   let changeHand = false;
-
-  // Get current owner and check it the token has changed hand
-  const currentOwner = await currentOwnerCheckAndCache(tokenId);
-  if (currentOwner.toLowerCase() !== originalOwner.toLowerCase()) {
-    changeHand = true;
-  }
-
-  // Get ENS name (for both original and current owner)
-  const originalENSName = await ensNameCheckAndCache(originalOwner);
   let currentENSName;
-  if (changeHand) {
+  if (
+    currentOwner &&
+    currentOwner.toLowerCase() !== originalOwner.toLowerCase()
+  ) {
+    changeHand = true;
+    // Need to fetch current owner's ENS name
     currentENSName = await ensNameCheckAndCache(currentOwner);
   }
 
@@ -421,10 +425,6 @@ async function currentOwnerCheckAndCache(tokenId) {
 
   // Try to get current owner
   try {
-    const publicClient = createPublicClient({
-      chain: sepolia,
-      transport: http(),
-    });
     currentOwner = await publicClient.readContract({
       address: CONTRACT_ADDRESS,
       abi: CONTRACT_ABI,
@@ -453,10 +453,6 @@ async function ensNameCheckAndCache(address) {
 
   // Try get ENS name
   try {
-    const publicClient = createPublicClient({
-      chain: sepolia,
-      transport: http(),
-    });
     ensName = await publicClient.getEnsName({
       address: address,
     });
