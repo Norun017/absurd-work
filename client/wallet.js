@@ -7,6 +7,19 @@ export function isWalletInstalled() {
   return typeof window.ethereum !== "undefined";
 }
 
+// Listen for account changes in MetaMask
+if (typeof window.ethereum !== "undefined") {
+  window.ethereum.on("accountsChanged", (accounts) => {
+    if (accounts.length === 0) {
+      // User disconnected their wallet
+      walletAddress = null;
+    } else {
+      // User switched to a different account
+      walletAddress = accounts[0];
+    }
+  });
+}
+
 // Get current connected wallet address
 export function getWalletAddress() {
   return walletAddress;

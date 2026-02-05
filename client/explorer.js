@@ -9,7 +9,6 @@ import { CONTRACT_ADDRESS, CONTRACT_ABI } from "./contract.js";
 import {
   createWalletClient,
   custom,
-  encodeFunctionData,
   createPublicClient,
   http,
 } from "https://esm.sh/viem@2.45.1";
@@ -136,6 +135,7 @@ mintButton.addEventListener("click", async () => {
     // Step 2: Connect wallet
     mintStatus.innerHTML = "Connecting wallet...";
     let userAddress = getWalletAddress(); // get address if already connected
+    console.log(userAddress);
 
     if (!userAddress) {
       // Not currently connected
@@ -212,21 +212,21 @@ mintButton.addEventListener("click", async () => {
 
     console.log("Mint price:", mintPrice.toString());
 
-    // Step 6: Encode function call data
+    // Step 6: Simulate transaction first to check if it would succeed
     const paidOffChain = false;
-    const data = encodeFunctionData({
+    mintStatus.innerHTML = "Checking transaction...";
+    const { request } = await publicClient.simulateContract({
+      address: CONTRACT_ADDRESS,
       abi: CONTRACT_ABI,
       functionName: "safeMint",
       args: [userAddress, BigInt(tokenId), paidOffChain, signature],
+      value: mintPrice,
+      account: userAddress,
     });
 
-    // Step 7: Send transaction
+    // Step 7: If simulation passed, send the actual transaction
     mintStatus.innerHTML = "Please confirm transaction in wallet...";
-    const txHash = await walletClient.sendTransaction({
-      to: CONTRACT_ADDRESS,
-      data,
-      value: mintPrice,
-    });
+    const txHash = await walletClient.writeContract(request);
 
     console.log("Transaction sent:", txHash);
     mintStatus.innerHTML = "Transaction sent! Waiting for confirmation...";
@@ -261,7 +261,8 @@ mintButton.addEventListener("click", async () => {
     }
 
     // Step 10: Success!
-    mintStatus.innerHTML = `✓ Successfully minted WORK #${counter}!`;
+    const shortHash = `${txHash.substring(0, 6)}...${txHash.substring(62)}`;
+    mintStatus.innerHTML = `✓ Minted WORK #${counter}! <a href="https://sepolia.etherscan.io/tx/${txHash}" target="_blank">Tx Hash: ${shortHash}</a>`;
     mintStatus.style.color = "green";
 
     // Clear input and refresh discovery info
@@ -364,118 +365,6 @@ async function fetchDiscoveryInfo(tokenId) {
   inscriptionEl.innerHTML = data.inscription_message
     ? `<i>Inscription: "${data.inscription_message}"</i>`
     : `<i>Inscription: -</i>`;
-}
-
-async function backup(tokenId) {
-  try {
-    const res = await fetch(`/api/discovery/${tokenId}`, { method: "GET" });
-
-    if (!res.ok) {
-      throw new Error("Failed to fetch discovery");
-    }
-
-    const data = await res.json();
-
-    // Check if token has been minted
-    if (!data.minted) {
-      // Token has not been minted
-      discovererEl.innerHTML = "Discoverer: Not yet discovered";
-      discoverDateEl.innerHTML = "Discovered Date: -";
-      inscriptionEl.innerHTML = `<i>Inscription: -</i>`;
-      //Enable minting
-      mintButton.disabled = false;
-      mintButton.textContent = "Connect to collect (0.01 ETH)";
-      return;
-    }
-
-    // Token has been minted
-
-    // Disable minting
-    mintButton.disabled = true;
-    mintButton.textContent = "Already discovered";
-
-    // Display discovery information
-    let displayAddress = data.discoverer;
-    let ownerLabel = "Discoverer";
-    let ensName;
-
-    // If the discoverer already mint with address
-    if (/^0x[a-fA-F0-9]{40}$/.test(data.discoverer)) {
-      // Check if token ownership has changed
-      const publicClient = createPublicClient({
-        chain: sepolia,
-        transport: http(),
-      });
-
-      // If cached
-      if (currentOwnerCache.has(tokenId)) {
-        const currentOwner = currentOwnerCache.get(tokenId);
-        if (
-          // If current owner != original discoverer
-          currentOwner.toLowerCase() !== data.discoverer.toLowerCase()
-        ) {
-          displayAddress = currentOwner;
-          ownerLabel = "Current owner";
-        }
-      } else {
-        // Try to get current owner
-        const currentOwner = await publicClient.readContract({
-          address: CONTRACT_ADDRESS,
-          abi: CONTRACT_ABI,
-          functionName: "ownerOf",
-          args: [BigInt(tokenId)],
-        });
-        // Then cache the owner
-        currentOwnerCache.set(tokenId, currentOwner);
-        // If owner has changed, show current owner instead
-        if (currentOwner.toLowerCase() !== data.discoverer.toLowerCase()) {
-          displayAddress = currentOwner;
-          ownerLabel = "Current owner";
-        }
-      }
-
-      // Try to get ENS name for the address (with caching)
-      const addressLower = displayAddress.toLowerCase();
-      if (ensCache.has(addressLower)) {
-        ensName = ensCache.get(addressLower);
-      } else {
-        try {
-          ensName = await publicClient.getEnsName({
-            address: displayAddress,
-          });
-          // Cache the result (including null/undefined for addresses without ENS)
-          ensCache.set(addressLower, ensName);
-        } catch (ensError) {
-          // ENS lookup failed, cache the failure to avoid retrying
-          ensCache.set(addressLower, null);
-          console.log("ENS lookup failed:", ensError);
-        }
-      }
-
-      // Display Current Owner name
-      discovererEl.innerHTML = ensName
-        ? `${ownerLabel}: ${ensName}`
-        : `${ownerLabel}: ${displayAddress.substring(
-            0,
-            6,
-          )}...${displayAddress.substring(38)}`;
-    } else {
-      // Display plain name if owner is not an address
-      discovererEl.innerHTML = `${ownerLabel}: ${data.discoverer}`;
-    }
-
-    discoverDateEl.innerHTML = `Discovered Date: ${new Date(
-      data.discovered_at,
-    ).toLocaleDateString()}`;
-    inscriptionEl.innerHTML = data.inscription_message
-      ? `<i>Inscription: "${data.inscription_message}"</i>`
-      : `<i>Inscription: -</i>`;
-  } catch (error) {
-    console.error("Failed to fetch discovery info:", error);
-    discovererEl.innerHTML = "Discoverer: Error loading";
-    discoverDateEl.innerHTML = "Discovered Date: -";
-    inscriptionEl.innerHTML = `<i>Inscription: -</i>`;
-  }
 }
 
 // ========== Render ==========
