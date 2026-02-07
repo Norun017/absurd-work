@@ -376,8 +376,8 @@ function render(counter) {
   const cellSizeSVG = 480 / GRID_SIZE;
 
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 480 480" shape-rendering="crispEdges">`;
-  svg += drawGridSVG(GRID_SIZE, GRID_SIZE, cellSizeSVG);
   svg += drawFromOrderSVG(counter, order, totalCells, cellSizeSVG);
+  svg += drawGridSVG(GRID_SIZE, GRID_SIZE, cellSizeSVG);
   svg += `</svg>`;
 
   SVGContainer.style.display = "flex";
