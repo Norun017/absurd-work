@@ -42,4 +42,26 @@ function drawFromOrderSVG(
   return svg;
 }
 
-export { drawGridSVG, drawFromOrderSVG, getDailyColor };
+// Order from center spread outward using Euclidean distance
+function distanceOrder(col, row) {
+  const centerX = (col - 1) / 2;
+  const centerY = (row - 1) / 2;
+  const order = [];
+
+  for (let y = 0; y < row; y++) {
+    for (let x = 0; x < col; x++) {
+      const dx = x - centerX;
+      const dy = y - centerY;
+      const d = Math.sqrt(dx * dx + dy * dy); //Compute Euclidean distance to center
+
+      order.push({ x, y, d });
+    }
+  }
+
+  // order by Euclidean distance, if equal compare y then x (you can change this for aesthetics)
+  // I reverse or here since the [0] digit will be the last pixel
+  order.sort((a, b) => b.d - a.d || b.y - a.y || b.x - a.x);
+  return order;
+}
+
+export { drawGridSVG, drawFromOrderSVG, getDailyColor, distanceOrder };

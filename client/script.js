@@ -1,10 +1,9 @@
 import {
-  distanceOrder,
   drawFromOrder as drawFromOrderGrid,
   drawGrid as drawGridLines,
 } from "./renderGrid.js";
 import { setupDetector, stopWebCam } from "./blink.js";
-import { drawGridSVG, drawFromOrderSVG } from "./renderSVG.js";
+import { drawGridSVG, drawFromOrderSVG, distanceOrder } from "./renderSVG.js";
 
 const log = document.querySelector(".log");
 const btn = document.querySelector("#work-btn");
@@ -65,16 +64,6 @@ init();
 
 // Render mode configuration
 const RENDER_MODES = {
-  grid: {
-    container: canvasContainer,
-    render: (counter) => {
-      const digits = counter.toString(2).padStart(totalCells, "0");
-      ctx.clearRect(0, 0, canvasSize, canvasSize);
-      drawFromOrderGrid(ctx, digits, order, cellSize, dpr, totalCells);
-      drawGridLines(ctx, GRID_SIZE, GRID_SIZE, canvasSize, dpr, cellSize);
-    },
-  },
-
   gridSVG: {
     container: SVGContainer,
     render: (counter) => {

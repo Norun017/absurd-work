@@ -1,5 +1,4 @@
-import { distanceOrder } from "./renderGrid.js";
-import { drawGridSVG, drawFromOrderSVG } from "./renderSVG.js";
+import { drawGridSVG, drawFromOrderSVG, distanceOrder } from "./renderSVG.js";
 import {
   connectWallet,
   getWalletAddress,
