@@ -12,7 +12,7 @@ import {
   createPublicClient,
   http,
 } from "https://esm.sh/viem@2.45.1";
-import { sepolia } from "https://esm.sh/viem@2.45.1/chains";
+import { mainnet } from "https://esm.sh/viem@2.45.1/chains";
 
 // Setup Renderer
 const SVGContainer = document.querySelector("#svg-container");
@@ -44,7 +44,7 @@ const currentOwnerCache = new Map();
 
 // Shared public client for RPC calls
 const publicClient = createPublicClient({
-  chain: sepolia,
+  chain: mainnet,
   transport: http(),
 });
 
@@ -155,18 +155,18 @@ mintButton.addEventListener("click", async () => {
     const chainId = await window.ethereum.request({ method: "eth_chainId" });
     const currentChainId = parseInt(chainId, 16);
 
-    if (currentChainId !== sepolia.id) {
-      mintStatus.innerHTML = "Please switch to Sepolia network...";
+    if (currentChainId !== mainnet.id) {
+      mintStatus.innerHTML = "Please switch to Ethereum Mainnet...";
       try {
         await window.ethereum.request({
           method: "wallet_switchEthereumChain",
-          params: [{ chainId: `0x${sepolia.id.toString(16)}` }],
+          params: [{ chainId: `0x${mainnet.id.toString(16)}` }],
         });
       } catch (switchError) {
         // This error code indicates that the chain has not been added to MetaMask
         if (switchError.code === 4902) {
           throw new Error(
-            "Sepolia network is not added to your wallet. Please add it manually.",
+            "Ethereum Mainnet is not added to your wallet. Please add it manually.",
           );
         }
         throw switchError;
@@ -199,7 +199,7 @@ mintButton.addEventListener("click", async () => {
 
     const walletClient = createWalletClient({
       account: userAddress,
-      chain: sepolia,
+      chain: mainnet,
       transport: custom(window.ethereum),
     });
 
@@ -263,7 +263,7 @@ mintButton.addEventListener("click", async () => {
 
     // Step 10: Success!
     const shortHash = `${txHash.substring(0, 6)}...${txHash.substring(62)}`;
-    mintStatus.innerHTML = `✓ Minted WORK #${counter}! <a href="https://sepolia.etherscan.io/tx/${txHash}" target="_blank">Tx Hash: ${shortHash}</a>`;
+    mintStatus.innerHTML = `✓ Minted WORK #${counter}! <a href="https://etherscan.io/tx/${txHash}" target="_blank">Tx Hash: ${shortHash}</a>`;
     mintStatus.style.color = "green";
 
     // Clear input and refresh discovery info
