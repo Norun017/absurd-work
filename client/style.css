@@ -178,7 +178,7 @@ canvas {
 }
 
 svg {
-  max-width: 410px; 
+  max-width: 410px;
 }
 
 /* --------------------
@@ -219,7 +219,7 @@ footer {
 }
 
 .footer-links {
-  display:inline-flex;
+  display: inline-flex;
   flex-direction: column;
   gap: 0.4rem;
 }
@@ -241,7 +241,6 @@ footer a:hover {
   width: 8em;
   cursor: pointer;
 }
-
 
 .support summary:hover {
   color: #696969;
@@ -289,7 +288,7 @@ footer a:hover {
 }
 
 .images {
-  justify-self: flex-end;
+  justify-self: end;
 }
 
 .img-with-caption {
@@ -309,7 +308,7 @@ footer a:hover {
 .img-with-caption p {
   font-size: 0.6rem;
   font-family: "Lucida Console", monospace;
-  color:#707070;
+  color: #707070;
   text-align: right;
   margin: 0;
 }
@@ -328,7 +327,6 @@ footer a:hover {
 -------------------- */
 
 .exploreUI-wrapper {
-  grid-column: auto;
   display: flex;
   flex-direction: column;
   gap: 2rem;
@@ -348,7 +346,7 @@ footer a:hover {
   -webkit-appearance: none;
   height: 8px;
   background: #ddd;
-  outline: none;  
+  outline: none;
 }
 
 #counter-slider::-webkit-slider-thumb {
@@ -360,7 +358,7 @@ footer a:hover {
 }
 
 #counter-random {
-  border:none;
+  border: none;
   padding: 0.5rem;
   background-color: #d8d8d8;
 }
@@ -419,7 +417,6 @@ footer a:hover {
   border: 1px solid #000;
 }
 
-
 #counter-msg {
   font-size: 0.8rem;
   color: #d00;
@@ -443,7 +440,7 @@ footer a:hover {
   text-decoration: underline;
   cursor: pointer;
   padding: 0;
-  margin-top: 0rem;
+  margin-top: 0;
 }
 
 .why-discover-btn:hover {
@@ -496,7 +493,7 @@ footer a:hover {
 }
 
 /* --------------------
-   Explorer Page Specific Layout
+   Explorer Page
 -------------------- */
 
 .explorer-page .desc-top {
@@ -504,13 +501,11 @@ footer a:hover {
 }
 
 .explorer-page .render-containers {
-  grid-column: auto;
   justify-content: flex-end;
   width: 100%;
 }
 
 .explorer-page .canvas-container {
-  grid-column: auto;
   justify-content: flex-end;
 }
 
@@ -539,7 +534,6 @@ footer a:hover {
   display: flex;
   flex-direction: column;
   background: #ececec;
-  
 }
 
 /* --------------------
@@ -547,6 +541,18 @@ footer a:hover {
 -------------------- */
 
 @media (max-width: 800px) {
+  body {
+    padding-bottom: 3rem;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+  }
+
+  .mode-button {
+    font-size: 2.5rem;
+  }
+
   .render-webcam-wrapper {
     display: flex;
     flex-direction: column;
@@ -581,18 +587,6 @@ footer a:hover {
     gap: 0.6rem;
   }
 
-  body {
-    padding-bottom: 3rem;
-  }
-
-  h1 {
-    font-size: 2.5rem;
-  }
-
-  .mode-button {
-    font-size: 2.5rem;
-  }
-
   .about-page .two-column-wrapper {
     grid-template-columns: 1fr;
     padding-left: 0;
@@ -601,10 +595,10 @@ footer a:hover {
   .about-page .description {
     order: -1;
     padding: 0 1rem;
+    overflow-wrap: break-word;
   }
 
   .img-with-caption img {
     max-width: 100%;
   }
 }
-

@@ -1,17 +1,12 @@
 # The Absurd Work
 
-A part ‘copy the master’ reimagination of Every Icon (1996) and part creative coding practice art project.
-Could human collective action ever exhaust the possibilities of a 16×16 grid?
+The Absurd Work is a counter toward every possible image in a 16×16 grid: 2²⁵⁶, or 115,792,089,237,316,195,423,570,985,008,687,907,853,269,984,665,640,564,039,457,584,007,913,129,639,936 possibilities, to be exact. The counter increments through the work done by participants, by clicking a button, or blinking, in this context. Can 8,300,000,000 humans (as of 2026) perform that much work? Should we work anyway, regardless of the outcome?
+
+My naïve belief that we could reach this number led me to create The Absurd Work to last as long as necessary for the counter to reach its goal. Each work produces a unique pixelated image, each carrying meaning through its visual, the act that generated it, or whatever was in the participant’s mind at that moment. I hope the pleasure of looking at these images might help us endure the absurdity of these works.
+
+This project draws inspiration from Every Icon (1996) by John F. Simon.
 
 **[Live Project](https://absurd-work.norun.art)** | **[Read the Essay](https://norun017.substack.com/t/theabsurdwork)**
-
----
-
-## Overview
-
-The Absurd Work lets everyone participate in “working” with a 16×16 grid. Each action (click) represents one image the grid can display, turning a single pixel from white to black and spreading outward from the center. The question is simple: Can we exhaust all 2^256 possible states of this grid,and if not, should we still try?
-
-**Current Version:** v0.5 (February 2026)
 
 ---
 
@@ -37,11 +32,11 @@ The Absurd Work lets everyone participate in “working” with a 16×16 grid. E
                                 └──────────────┘
 ```
 
-### Core Components
+### How This Work?
 
-**Click Tracking**
+**Work Tracking**
 
-- Append-only log file records every click with timestamp
+- Append-only log file records every work with timestamp
 - BigInt counter handles unlimited clicks (beyond JavaScript's Number.MAX_SAFE_INTEGER)
 - Batched write queue for high-performance under load (100,000+ clicks/sec)
 
@@ -66,95 +61,26 @@ The Absurd Work lets everyone participate in “working” with a 16×16 grid. E
 
 ---
 
-## Client
-
-**Location:** [`/client`](./client)
-
-The client is a vanilla JavaScript canvas application with no build step.
-
-### Features
-
-- **Canvas Rendering**: 16×16 grid drawn with HTML5 Canvas API
-- **Distance-Based Order**: Pixels fill from center outward using Euclidean distance
-- **Real-time Updates**: SSE connection shows live global counter
-- **Optimistic UI**: Instant visual feedback with rollback on error
-- **Binary Representation**: Counter converted to binary, each bit = one pixel
-
-### Pages
-
-**Main Page** (`index.html` + `script.js`)
-
-- Canvas-based click interface for participating in the work
-- Real-time SSE updates showing global counter
-
-**Explorer Page** (`explorer.html` + `explorer.js`)
-
-- Browse any work by number, slider, or random
-- SVG rendering of each work's 16x16 grid state
-- View discovery info: discoverer (with ENS resolution), date, and inscription
-- Mint works as on-chain NFTs via MetaMask (0.01 ETH)
-- Server-signed authorization prevents unauthorized mints
-
-### Key Files
-
-- `contract.js` - Contract address, ABI, and chain configuration
-- `wallet.js` - MetaMask connection and network validation
-- `renderSVG.js` - SVG rendering with daily color mode support
-- `renderGrid.js` - Distance-based pixel ordering from center outward
-
-### How It Works
-
-1. On load, fetches current counter from `/read`
-2. Converts counter to 256-bit binary string
-3. Maps each bit to a pixel position using distance order
-4. Draws grid with black (1) or white (0) pixels
-5. Listens to `/events` SSE for real-time updates
-6. On click, optimistically updates UI and posts to `/click`
-
-**Key Algorithm:**
-
-```javascript
-// Convert counter to binary (256 bits)
-let digits = counter.toString(2).padStart(256, "0");
-
-// Each pixel fills based on distance from center
-// Pixel at index 0 = center, index 255 = corner
-for (let i = 0; i < 256; i++) {
-  drawCell(order[i].x, order[i].y, digits[i] === "1" ? "black" : "white");
-}
-```
-
----
-
 ## Server
 
 **Location:** [`/server`](./server)
 
 Node.js/Express server handling clicks, persistence, and weekly publishing.
 
-### Performance Features (v0.3.5)
-
-**Batched Write Queue**
-
-- **100 clicks per batch** - Reduces file I/O by 100x
-- **100ms flush interval** - Maximum 100ms write delay
-- **Graceful degradation** - Returns 503 when overloaded (>10,000 pending writes)
-- Can handle 100,000+ clicks/second
-
-**SSE Memory Management**
-
-- Heartbeat mechanism detects and removes dead connections
-- Prevents memory leaks from zombie clients
-- Broadcasts only when counter changes
-
 ### API Endpoints
 
-| Endpoint  | Method | Description                         |
-| --------- | ------ | ----------------------------------- |
-| `/click`  | POST   | Record a click (increments counter) |
-| `/read`   | GET    | Get current counter value           |
-| `/events` | GET    | SSE stream for real-time updates    |
-| `/health` | GET    | Health check with environment       |
+The Absurd Work is modular — anyone can send inputs to increment the counter, and present any output that can represent a 256-bit space. Build your work tools with the endpoints below.
+
+**Base URL:** `https://absurd-work.norun.art`
+
+| Endpoint  | Method | Description                               | Response                |
+| --------- | ------ | ----------------------------------------- | ----------------------- |
+| `/click`  | POST   | Increment counter by 1 (no body required) | `{ "counter": "4218" }` |
+| `/read`   | GET    | Get current counter value                 | `{ "counter": "4218" }` |
+| `/events` | GET    | SSE stream (broadcasts every 3s)          | `data: 4218`            |
+| `/health` | GET    | Health check                              | `{ "ok": true }`        |
+
+Counter is returned as a string (BigInt that will exceed `Number.MAX_SAFE_INTEGER`). The main site converts it to a 256-bit binary string where each bit maps to a pixel in a 16×16 grid (`1` = black, `0` = white).
 
 ### File Structure
 
@@ -294,98 +220,23 @@ The snapshot chain creates an immutable record - each snapshot references the pr
 
 ---
 
-## Development
-
-### Prerequisites
-
-- Node.js 18+
-- npm or yarn
-
-### Local Setup
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/every-icon-collective.git
-cd every-icon-collective
-
-# Install server dependencies
-cd server
-npm install
-
-# Start development server
-npm run devstart
-
-# In another terminal, serve the client
-cd ../client
-python3 -m http.server 3000
-# Or use any static file server
-
-# Open browser
-open http://localhost:3000
-```
-
-### Server Scripts
-
-```bash
-npm start              # Production server
-npm run devstart       # Development with nodemon
-npm run publish        # Weekly publish (run while server is stopped)
-```
-
----
-
-## Production Deployment
-
-### Setup with PM2
-
-```bash
-# Install PM2 globally
-npm install -g pm2
-
-# Start server
-cd server
-pm2 start index.js --name absurd-work
-
-# Save PM2 configuration
-pm2 save
-
-# Setup auto-restart on reboot
-pm2 startup
-```
-
-### Weekly Publishing Cron Job
-
-```bash
-# Edit crontab
-crontab -e
-
-# Add this line (runs every Sunday at midnight)
-0 0 * * 0 cd /path/to/server && pm2 stop absurd-work && sleep 2 && node publish-standalone.js >> /path/to/publish.log 2>&1 && sleep 1 && pm2 start absurd-work
-```
-
-### Environment Variables
-
-```bash
-NODE_ENV=production    # Set production mode
-```
-
----
-
-## Philosophy
-
-This project intentionally has **no rate limiting** on clicks. The art piece explores whether humans can exhaust all possibilities of the 16×16 grid. Anyone can click as fast as they want, even with the help of their creations (machines).
-
----
-
 ## Version History
+
+**v0.5** (February 2026)
+
+- Explorer page: browse past works by number, slider, or random
+- NFT minting with server-signed authorization
+- On-chain SVG rendering (with daily color mode)
+- Smart contract deployed to Ethereum mainnet (Contract: [0xeaB574d06282F1b7ecA24C7495597de8D3508e6B](https://etherscan.io/address/0xeab574d06282f1b7eca24c7495597de8d3508e6b))
+- About page with project description and modular concept
+- SQLite database
 
 **v0.3.5** (January 2026)
 
 - Batched write queue for high-performance click handling
 - SSE heartbeat for connection management
-- Standalone weekly publish script with PM2 integration
+- Weekly publish script
 - Enhanced snapshot format with Merkle root and detailed segment metadata
-- Snapshot chain for temporal ordering and verification
 
 **v0.2** (Prototype)
 
