@@ -20,9 +20,16 @@ const port = 3001;
 app.use(express.static(path.join(__dirname, "../client")));
 app.use(express.json()); // Add this for JSON body parsing
 
+// ============ SETUP PAGES ============
+
 // Serve explorer page at /explorer
 app.get("/explorer", (req, res) => {
   res.sendFile(path.join(__dirname, "../client/explorer.html"));
+});
+
+// Serve about page at /about
+app.get("/about", (req, res) => {
+  res.sendFile(path.join(__dirname, "../client/about.html"));
 });
 
 const LOG_PATH = path.join(__dirname, "absurd-work.log");
@@ -153,8 +160,8 @@ app.post("/api/signature", async (req, res) => {
     const messageHash = keccak256(
       encodePacked(
         ["address", "uint256", "bool"],
-        [userAddress, tokenIdBigInt, paidOffChain]
-      )
+        [userAddress, tokenIdBigInt, paidOffChain],
+      ),
     );
 
     // Sign the message
@@ -162,7 +169,7 @@ app.post("/api/signature", async (req, res) => {
       message: { raw: messageHash },
     });
     console.log(
-      `Signature generated for ${userAddress} - tokenId: ${tokenId} - paidOffChain: ${paidOffChain}`
+      `Signature generated for ${userAddress} - tokenId: ${tokenId} - paidOffChain: ${paidOffChain}`,
     );
 
     res.json({
@@ -210,7 +217,7 @@ app.post("/api/discovery", (req, res) => {
       tokenId.toString(),
       discoverer,
       discoveredAt,
-      inscriptionMessage || null
+      inscriptionMessage || null,
     );
 
     res.json({
