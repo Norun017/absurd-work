@@ -3,7 +3,7 @@
 A part ‘copy the master’ reimagination of Every Icon (1996) and part creative coding practice art project.
 Could human collective action ever exhaust the possibilities of a 16×16 grid?
 
-**[Live Project](https://absurd-work.norun.art)** | **[Read the Essay](https://norun017.substack.com/p/making-of-the-absurd-work)**
+**[Live Project](https://absurd-work.norun.art)** | **[Read the Essay](https://norun017.substack.com/t/theabsurdwork)**
 
 ---
 
@@ -11,7 +11,7 @@ Could human collective action ever exhaust the possibilities of a 16×16 grid?
 
 The Absurd Work lets everyone participate in “working” with a 16×16 grid. Each action (click) represents one image the grid can display, turning a single pixel from white to black and spreading outward from the center. The question is simple: Can we exhaust all 2^256 possible states of this grid,and if not, should we still try?
 
-**Current Version:** v0.3.5 (January 2026)
+**Current Version:** v0.5 (February 2026)
 
 ---
 
@@ -80,11 +80,27 @@ The client is a vanilla JavaScript canvas application with no build step.
 - **Optimistic UI**: Instant visual feedback with rollback on error
 - **Binary Representation**: Counter converted to binary, each bit = one pixel
 
-### Files
+### Pages
 
-- `index.html` - Canvas element and UI
-- `script.js` - Grid rendering, SSE, click handling
-- `style.css` - Styling
+**Main Page** (`index.html` + `script.js`)
+
+- Canvas-based click interface for participating in the work
+- Real-time SSE updates showing global counter
+
+**Explorer Page** (`explorer.html` + `explorer.js`)
+
+- Browse any work by number, slider, or random
+- SVG rendering of each work's 16x16 grid state
+- View discovery info: discoverer (with ENS resolution), date, and inscription
+- Mint works as on-chain NFTs via MetaMask (0.01 ETH)
+- Server-signed authorization prevents unauthorized mints
+
+### Key Files
+
+- `contract.js` - Contract address, ABI, and chain configuration
+- `wallet.js` - MetaMask connection and network validation
+- `renderSVG.js` - SVG rendering with daily color mode support
+- `renderGrid.js` - Distance-based pixel ordering from center outward
 
 ### How It Works
 
@@ -176,6 +192,7 @@ Automated weekly snapshot and publish process runs **every Sunday at midnight**.
 5. Pushes to GitHub repository: [absird-work-history](https://github.com/Norun017/absird-work-history)
 
 **Publishing Destinations:**
+
 - **GitHub**: [github.com/Norun017/absird-work-history](https://github.com/Norun017/absird-work-history)
 - **IPFS**: Distributed storage with CIDs logged in `ipfs-cids.log`
 
