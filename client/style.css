@@ -292,9 +292,26 @@ footer a:hover {
   justify-self: flex-end;
 }
 
-.images img {
-  max-width: 480px;
+.img-with-caption {
   margin: 1rem auto;
+}
+
+.img-with-caption img {
+  max-width: 480px;
+}
+
+.img-with-caption .small-images {
+  max-width: 280px;
+  display: block;
+  margin-left: auto;
+}
+
+.img-with-caption p {
+  font-size: 0.6rem;
+  font-family: "Lucida Console", monospace;
+  color:#707070;
+  text-align: right;
+  margin: 0;
 }
 
 .description {
@@ -574,6 +591,20 @@ footer a:hover {
 
   .mode-button {
     font-size: 2.5rem;
+  }
+
+  .about-page .two-column-wrapper {
+    grid-template-columns: 1fr;
+    padding-left: 0;
+  }
+
+  .about-page .description {
+    order: -1;
+    padding: 0 1rem;
+  }
+
+  .img-with-caption img {
+    max-width: 100%;
   }
 }
 
