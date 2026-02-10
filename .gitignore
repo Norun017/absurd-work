@@ -1,0 +1,20 @@
+/client-offline/
+/backup/
+
+### LOG ###
+/server/counters.log
+/server/absurd-work.log
+/server/snapshots
+/server/publish
+/server/history_logs
+
+/server/node_modules
+
+### DB ###
+/server/*.db
+/server/backup-db.sh
+
+.env
+
+.DS_Store
+
