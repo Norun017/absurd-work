@@ -351,14 +351,16 @@ async function fetchDiscoveryInfo(tokenId) {
   }
 
   // Display original discoverer
-  discovererEl.innerHTML = `Discoverer: ${
-    originalENSName ? originalENSName : originalOwner.substring(0, 6)
-  }...${originalOwner.substring(38)}`;
+  const originalDisplay = originalENSName
+    ? originalENSName
+    : `${originalOwner.substring(0, 6)}...${originalOwner.substring(38)}`;
+  discovererEl.innerHTML = `Discoverer: ${originalDisplay}`;
   // Display current owner after (if change hand)
   if (changeHand) {
-    discovererEl.innerHTML += `</br>(Current Owner: ${
-      currentENSName ? currentENSName : currentOwner.substring(0, 6)
-    }...${currentOwner.substring(38)})`;
+    const currentDisplay = currentENSName
+      ? currentENSName
+      : `${currentOwner.substring(0, 6)}...${currentOwner.substring(38)}`;
+    discovererEl.innerHTML += `</br>(Current Owner: ${currentDisplay})`;
   }
 
   discoverDateEl.innerHTML = `Discovered Date: ${new Date(
