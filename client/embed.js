@@ -101,7 +101,7 @@ function render(counter) {
   digits = digits.padStart(totalCells, 0); // pad left to total cells (total digits)
   drawFromOrder(digits);
   drawGrid(); // Draw grid over cells
-  log.textContent = counter; // Show counter
+  log.textContent = counter.toLocaleString(); // Show counter
 }
 
 // Draw Grid with Canvas

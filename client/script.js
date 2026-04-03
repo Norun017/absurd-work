@@ -99,7 +99,7 @@ function render(counter) {
     mode.render(counter);
   }
 
-  log.textContent = counter;
+  log.textContent = counter.toLocaleString();
 }
 
 // -----------Click Handler----------
